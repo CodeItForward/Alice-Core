@@ -1,15 +1,17 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MessageSquarePlus, ChevronLeft } from 'lucide-react';
-import { Logo } from '../ui/Logo';
+// import { Logo } from '../ui/Logo';
 
 interface SidebarProps {
   isOpen: boolean;
   toggleSidebar: () => void;
   pluginNavLinks?: Array<{ label: string; path: string }>;
+  Logo?: React.ComponentType;
+  colorScheme?: { primary: string; secondary: string };
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, pluginNavLinks = [] }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, pluginNavLinks = [], Logo, colorScheme }) => {
   return (
     <>
       {/* Mobile overlay */}
@@ -27,7 +29,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, pluginNavLinks
         } fixed inset-y-0 left-0 z-30 w-64 bg-white shadow-lg transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:z-auto`}
       >
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
-          <Logo />
+          {Logo ? <Logo /> : null}
           <button 
             onClick={toggleSidebar} 
             className="p-1 rounded-full hover:bg-gray-100 transition-colors duration-200 lg:hidden"
@@ -51,8 +53,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, pluginNavLinks
         
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-800 font-medium">
-              A
+            <div className="w-8 h-8 rounded-full" style={{ background: colorScheme?.secondary || '#EDE9FE', color: colorScheme?.primary || '#6D28D9' }}>
+              <span className="flex items-center justify-center h-full">A</span>
             </div>
             <div className="text-sm">
               <p className="font-medium">Alice</p>
