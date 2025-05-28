@@ -1,6 +1,6 @@
 import React from 'react';
 import { MessageSquarePlus, ChevronLeft } from 'lucide-react';
-import { Logo } from '../../src/components/ui/Logo';
+import { Logo } from '../ui/Logo';
 
 interface SidebarProps {
   isOpen: boolean;

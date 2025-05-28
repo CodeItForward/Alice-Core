@@ -1,6 +1,6 @@
 import React from 'react';
 import { Menu, Bell, HelpCircle } from 'lucide-react';
-import UserDropdown from '../../src/components/ui/UserDropdown';
+import UserDropdown from '../ui/UserDropdown';
 
 interface HeaderProps {
   toggleSidebar: () => void;
