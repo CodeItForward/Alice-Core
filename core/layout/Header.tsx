@@ -5,9 +5,10 @@ import UserDropdown from '../ui/UserDropdown';
 interface HeaderProps {
   toggleSidebar: () => void;
   isSidebarOpen: boolean;
+  siteName?: string;
 }
 
-const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
+const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen, siteName = "Alice" }) => {
   return (
     <header className="h-16 border-b border-gray-200 bg-white shadow-sm flex items-center justify-between px-4">
       <div className="flex items-center">
@@ -18,7 +19,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
         >
           <Menu size={20} />
         </button>
-        <h1 className="ml-4 text-xl font-semibold text-gray-800">Alice</h1>
+        <h1 className="ml-4 text-xl font-semibold text-gray-800">{siteName}</h1>
         <span className="ml-2 px-2 py-0.5 text-xs bg-purple-100 text-purple-800 rounded-full font-medium">
           AI Copilot
         </span>

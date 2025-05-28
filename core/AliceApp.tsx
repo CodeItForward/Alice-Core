@@ -1,5 +1,9 @@
 import React from 'react';
-import MainLayout from './layout/MainLayout';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Sidebar from './layout/Sidebar';
+import Header from './layout/Header';
+import ChatContainer from './chat/ChatContainer';
+import { MessageProvider } from './context/MessageContext';
 
 interface AliceAppProps {
   config: {
@@ -15,12 +19,62 @@ interface AliceAppProps {
 }
 
 const AliceApp: React.FC<AliceAppProps> = ({ config, plugins }) => {
-  // For now, we'll just render the MainLayout
-  // In the future, this will handle plugin registration, routing, etc.
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  // Collect all nav links from plugins
+  const pluginNavLinks = plugins.flatMap(plugin => plugin.navLinks);
+  
+  // Collect all routes from plugins
+  const pluginRoutes = plugins.flatMap(plugin => plugin.routes);
+
   console.log('AliceApp loaded with config:', config);
   console.log('AliceApp loaded with plugins:', plugins);
-  
-  return <MainLayout />;
+  console.log('Plugin nav links:', pluginNavLinks);
+  console.log('Plugin routes:', pluginRoutes);
+
+  return (
+    <MessageProvider>
+      <Router>
+        <div className="flex h-screen bg-gray-50 text-gray-900">
+          <Sidebar 
+            isOpen={isSidebarOpen} 
+            toggleSidebar={toggleSidebar}
+            pluginNavLinks={pluginNavLinks}
+          />
+          <div className="flex flex-col flex-grow overflow-hidden">
+            <Header 
+              toggleSidebar={toggleSidebar} 
+              isSidebarOpen={isSidebarOpen}
+              siteName={config.siteName}
+            />
+            <main className="flex-grow overflow-hidden">
+              <Routes>
+                {/* Default chat route */}
+                <Route path="/" element={<ChatContainer openAIApiKey={config.openAIApiKey} />} />
+                <Route path="/chat" element={<ChatContainer openAIApiKey={config.openAIApiKey} />} />
+                
+                {/* Plugin routes */}
+                {pluginRoutes.map((route, index) => (
+                  <Route 
+                    key={`${route.path}-${index}`}
+                    path={route.path} 
+                    element={<route.component />} 
+                  />
+                ))}
+                
+                {/* Fallback to chat */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </main>
+          </div>
+        </div>
+      </Router>
+    </MessageProvider>
+  );
 };
 
 export default AliceApp; 

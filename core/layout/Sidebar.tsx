@@ -1,13 +1,15 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { MessageSquarePlus, ChevronLeft } from 'lucide-react';
 import { Logo } from '../ui/Logo';
 
 interface SidebarProps {
   isOpen: boolean;
   toggleSidebar: () => void;
+  pluginNavLinks?: Array<{ label: string; path: string }>;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, pluginNavLinks = [] }) => {
   return (
     <>
       {/* Mobile overlay */}
@@ -35,7 +37,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         </div>
         
         <nav className="p-4 space-y-2">
-          <SidebarButton icon={<MessageSquarePlus size={18} />} label="New Chat" />
+          <SidebarLink to="/chat" icon={<MessageSquarePlus size={18} />} label="New Chat" />
+          
+          {/* Plugin navigation links */}
+          {pluginNavLinks.map((navLink, index) => (
+            <SidebarLink 
+              key={`${navLink.path}-${index}`}
+              to={navLink.path}
+              label={navLink.label}
+            />
+          ))}
         </nav>
         
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
@@ -54,12 +65,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   );
 };
 
-const SidebarButton: React.FC<{ icon: React.ReactNode; label: string }> = ({ icon, label }) => {
+const SidebarLink: React.FC<{ to: string; icon?: React.ReactNode; label: string }> = ({ to, icon, label }) => {
   return (
-    <button className="flex items-center w-full px-3 py-2 text-gray-700 rounded-md hover:bg-purple-50 hover:text-purple-800 transition-colors duration-200 group">
-      <span className="mr-3 text-gray-500 group-hover:text-purple-800 transition-colors duration-200">{icon}</span>
+    <Link 
+      to={to}
+      className="flex items-center w-full px-3 py-2 text-gray-700 rounded-md hover:bg-purple-50 hover:text-purple-800 transition-colors duration-200 group"
+    >
+      {icon && <span className="mr-3 text-gray-500 group-hover:text-purple-800 transition-colors duration-200">{icon}</span>}
       <span className="font-medium">{label}</span>
-    </button>
+    </Link>
   );
 };
 

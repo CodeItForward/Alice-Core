@@ -1,9 +1,13 @@
 import React, { useRef, useEffect } from 'react';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
-import { useMessages } from '../../src/context/MessageContext';
+import { useMessages } from '../context/MessageContext';
 
-const ChatContainer: React.FC = () => {
+interface ChatContainerProps {
+  openAIApiKey?: string;
+}
+
+const ChatContainer: React.FC<ChatContainerProps> = ({ openAIApiKey }) => {
   const { messages } = useMessages();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
@@ -14,6 +18,13 @@ const ChatContainer: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Log the OpenAI API key for debugging (in production, don't log sensitive data)
+  useEffect(() => {
+    if (openAIApiKey) {
+      console.log('ChatContainer initialized with OpenAI API key:', openAIApiKey.substring(0, 10) + '...');
+    }
+  }, [openAIApiKey]);
   
   return (
     <div className="flex flex-col h-full max-h-full">
@@ -41,7 +52,7 @@ const ChatContainer: React.FC = () => {
       
       <div className="p-4 border-t border-gray-200 bg-white">
         <div className="max-w-3xl mx-auto">
-          <MessageInput />
+          <MessageInput openAIApiKey={openAIApiKey} />
         </div>
       </div>
     </div>
