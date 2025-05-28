@@ -2,7 +2,7 @@ import React from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import ChatContainer from '../chat/ChatContainer';
-import { MessageProvider } from '../../context/MessageContext';
+import { MessageProvider } from '../../src/context/MessageContext';
 
 const MainLayout: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
