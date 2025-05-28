@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { Send, Paperclip, Mic } from 'lucide-react';
-import { useMessages } from '../../src/context/MessageContext';
+import { useMessages } from '../context/MessageContext';
 
-const MessageInput: React.FC = () => {
+interface MessageInputProps {
+  openAIApiKey?: string;
+}
+
+const MessageInput: React.FC<MessageInputProps> = ({ openAIApiKey }) => {
   const [message, setMessage] = useState('');
   const { addMessage } = useMessages();
   
@@ -22,11 +26,16 @@ const MessageInput: React.FC = () => {
       setMessage('');
       
       // Simulate AI response after a short delay
+      // In the future, this will use the OpenAI API key for real responses
       setTimeout(() => {
+        const responseMessage = openAIApiKey && openAIApiKey !== 'YOUR_OPENAI_KEY' 
+          ? `I'm Alice, your AI assistant with OpenAI integration. How can I help you with "${message.trim()}"?`
+          : `I'm Alice, your NYU AI assistant. How can I help you with "${message.trim()}"? (Note: OpenAI integration not configured)`;
+          
         addMessage({
           id: (Date.now() + 1).toString(),
           sender: 'ai',
-          content: `I'm Alice, your NYU AI assistant. How can I help you with "${message.trim()}"?`,
+          content: responseMessage,
           timestamp: new Date()
         });
       }, 1000);

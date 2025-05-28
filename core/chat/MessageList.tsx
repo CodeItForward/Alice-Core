@@ -1,6 +1,6 @@
 import React from 'react';
 import Message from './Message';
-import { useMessages } from '../../src/context/MessageContext';
+import { useMessages } from '../context/MessageContext';
 
 const MessageList: React.FC = () => {
   const { messages } = useMessages();
