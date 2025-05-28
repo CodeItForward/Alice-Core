@@ -1,10 +1,12 @@
-import React from 'react';
-import MainLayout from '../core/layout/MainLayout';
+import React from "react";
+import config from "../config.json";
+import AliceApp from "../core/AliceApp.tsx";
+import samplePlugin from "../plugins/sample-plugin/index.tsx";
 
-function App() {
+const plugins = [samplePlugin];
+
+export default function App() {
   return (
-    <MainLayout />
+    <AliceApp config={config} plugins={plugins} />
   );
 }
-
-export default App;
