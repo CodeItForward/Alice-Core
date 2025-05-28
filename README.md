@@ -1,88 +1,280 @@
-# Alice Copilot – Monorepo
+# Alice Copilot
 
-This repository contains both the **frontend** and **backend** for Alice, an internal AI-powered copilot designed to assist with documentation, workflow automation, and personalized queries across Jira and other systems.
+Alice Copilot is a modern, plugin-based AI assistant built with React and TypeScript. It features a modular architecture that allows for easy extension through plugins, centralized configuration, and integrated chat functionality with OpenAI support.
 
 ---
 
-## 🗂 Project Structure
+## 🏗️ Architecture Overview
+
+Alice Copilot follows a **plugin-first architecture** where the core application provides the foundation, and plugins extend functionality through routes and navigation.
+
+### Key Features
+- 🔌 **Plugin System**: Modular architecture for easy feature extension
+- 🤖 **AI Integration**: Built-in OpenAI API support for chat functionality
+- 🎨 **Modern UI**: Clean, responsive interface built with Tailwind CSS
+- 🧭 **Dynamic Routing**: Automatic route registration from plugins
+- ⚙️ **Centralized Config**: JSON-based configuration management
+- 📱 **Responsive Design**: Mobile-first design with sidebar navigation
+
+---
+
+## 📁 Project Structure
 
 ```
-copilot/
-├── frontend/          # React + Tailwind UI (Vite, managed in Cursor)
-├── backend/           # Azure Functions backend (C#, Isolated Worker)
-├── shared/            # (Optional) Shared models or constants
-├── .gitignore
-├── README.md
+Alice-Core/
+├── src/                      # Application Bootstrap
+│   ├── main.tsx             # Vite entry point
+│   ├── App.tsx              # App configuration & plugin loading
+│   ├── index.css            # Global styles (Tailwind)
+│   └── vite-env.d.ts        # Vite TypeScript definitions
+├── core/                     # Core Application Logic
+│   ├── AliceApp.tsx         # Main app component & plugin host
+│   ├── context/             # React contexts
+│   │   └── MessageContext.tsx
+│   ├── types/               # TypeScript type definitions
+│   │   └── message.ts
+│   ├── ui/                  # Reusable UI components
+│   │   ├── Logo.tsx
+│   │   └── UserDropdown.tsx
+│   ├── layout/              # Layout components
+│   │   ├── Header.tsx
+│   │   ├── Sidebar.tsx
+│   │   └── MainLayout.tsx
+│   └── chat/                # Chat functionality
+│       ├── ChatContainer.tsx
+│       ├── Message.tsx
+│       ├── MessageInput.tsx
+│       └── MessageList.tsx
+├── plugins/                  # Plugin System
+│   └── sample-plugin/
+│       └── index.tsx        # Sample plugin implementation
+├── config.json              # Application configuration
+└── package.json             # Dependencies & scripts
 ```
 
 ---
 
-## 🧑‍💻 Development Setup
+## 🚀 Getting Started
 
-### Frontend (React + Tailwind)
+### Prerequisites
+- Node.js 18+ 
+- npm or yarn
 
-- Open the `frontend/` folder in **Cursor** (or VS Code).
-- Run:
+### Installation
 
-    cd frontend
-    npm install
-    npm run dev
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd Alice-Core
+   ```
 
-- Local dev runs on http://localhost:5173/
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-- Make sure `vite.config.js` includes a proxy to your backend:
+3. **Configure the application**
+   
+   Update `config.json` with your settings:
+   ```json
+   {
+     "siteName": "Alice Copilot",
+     "openAIApiKey": "your-openai-api-key-here",
+     "theme": "default"
+   }
+   ```
 
-    server: {
-      proxy: {
-        '/api': 'http://localhost:7071',
-      },
-    }
+4. **Start development server**
+   ```bash
+   npm run dev
+   ```
 
----
-
-### Backend (Azure Functions)
-
-- Open the `copilot.sln` file in **Visual Studio**.
-- Run the Azure Functions project locally:
-
-    cd backend
-    func start
-
-- The API will run on http://localhost:7071/api/
-
----
-
-## 🔄 Connecting Frontend to Backend
-
-From the frontend, you can call your API like this:
-
-    fetch('/api/GetUserTasks')
-
-Thanks to Vite’s proxy, this will forward to the Azure Function running locally.
+5. **Open in browser**
+   
+   Navigate to `http://localhost:5173`
 
 ---
 
-## 🚀 Deployment Overview
+## 🔌 Plugin Development
 
-- **Frontend**: Deploy via Azure Static Web Apps, Blob Storage, or any static host.
-- **Backend**: Deploy via Azure Functions (standard deployment).
-- Use `.env` files to set the appropriate base URLs or secrets in each environment.
+### Creating a Plugin
+
+Plugins are self-contained modules that extend Alice's functionality. Here's how to create one:
+
+1. **Create plugin directory**
+   ```bash
+   mkdir plugins/my-plugin
+   ```
+
+2. **Create plugin definition**
+   ```typescript
+   // plugins/my-plugin/index.tsx
+   import React from "react";
+
+   export default {
+     name: "My Plugin",
+     navLinks: [
+       { label: "My Feature", path: "/my-feature" }
+     ],
+     routes: [
+       { 
+         path: "/my-feature", 
+         component: () => <div>My Plugin Page!</div> 
+       }
+     ]
+   };
+   ```
+
+3. **Register the plugin**
+   ```typescript
+   // src/App.tsx
+   import myPlugin from "../plugins/my-plugin/index.tsx";
+   
+   const plugins = [samplePlugin, myPlugin];
+   ```
+
+### Plugin Structure
+
+Each plugin exports an object with:
+- **`name`**: Display name for the plugin
+- **`navLinks`**: Array of navigation links to add to sidebar
+- **`routes`**: Array of React Router routes to register
 
 ---
 
-## 🧠 Tools Used
+## ⚙️ Configuration
 
-- React + Tailwind (Vite) — Frontend
-- Azure Functions (.NET 7 Isolated Worker) — Backend
-- Cursor — Frontend development IDE
-- Visual Studio — Backend development IDE
+### config.json
+
+The application uses a centralized configuration file:
+
+```json
+{
+  "siteName": "Alice Copilot",
+  "openAIApiKey": "your-openai-api-key",
+  "theme": "default"
+}
+```
+
+### Environment Variables
+
+For production deployments, consider using environment variables:
+- `OPENAI_API_KEY`: Your OpenAI API key
+- `VITE_SITE_NAME`: Application name
 
 ---
 
-## 🧾 TODOs
+## 🤖 AI Integration
 
-- [ ] Wire up authentication
-- [ ] Add shared type definitions (e.g., Ticket, UserProfile)
-- [ ] Connect to Jira APIs
-- [ ] Add Cognitive Search or RAG fallback
-- [ ] Polish UI with loading states and error handling
+Alice includes built-in support for OpenAI's API:
+
+1. **Set your API key** in `config.json`
+2. **Chat interface** automatically uses the configured key
+3. **Message context** maintains conversation history
+4. **Extensible** - easy to add other AI providers
+
+---
+
+## 🎨 Styling & Theming
+
+- **Tailwind CSS**: Utility-first CSS framework
+- **Responsive Design**: Mobile-first approach
+- **Dark Mode Ready**: Theme system in place
+- **Custom Components**: Reusable UI components in `core/ui/`
+
+---
+
+## 🛠️ Development
+
+### Available Scripts
+
+```bash
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run preview      # Preview production build
+npm run lint         # Run ESLint
+```
+
+### Tech Stack
+
+- **Frontend**: React 18 + TypeScript
+- **Routing**: React Router DOM
+- **Styling**: Tailwind CSS
+- **Icons**: Lucide React
+- **Build Tool**: Vite
+- **Package Manager**: npm
+
+---
+
+## 🚀 Deployment
+
+### Build for Production
+
+```bash
+npm run build
+```
+
+### Deploy Options
+
+- **Vercel**: Connect your GitHub repo for automatic deployments
+- **Netlify**: Drag and drop the `dist` folder
+- **Azure Static Web Apps**: Use the Azure CLI
+- **GitHub Pages**: Use GitHub Actions for CI/CD
+
+### Environment Setup
+
+1. Set environment variables for your deployment platform
+2. Update `config.json` or use environment variable substitution
+3. Ensure your OpenAI API key is securely stored
+
+---
+
+## 🔒 Security Notes
+
+- **API Keys**: Never commit real API keys to version control
+- **Environment Variables**: Use secure environment variable storage
+- **Config Files**: Consider adding `config.json` to `.gitignore` for production
+- **HTTPS**: Always use HTTPS in production
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Plugin Contributions
+
+We welcome plugin contributions! Please:
+- Follow the plugin structure guidelines
+- Include documentation for your plugin
+- Test your plugin thoroughly
+- Submit plugins as separate directories in `plugins/`
+
+---
+
+## 📝 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+---
+
+## 🆘 Support
+
+- **Issues**: Report bugs and request features via GitHub Issues
+- **Documentation**: Check the `/docs` folder for detailed guides
+- **Community**: Join our discussions in GitHub Discussions
+
+---
+
+## 🎯 Roadmap
+
+- [ ] Plugin marketplace and discovery
+- [ ] Advanced AI model support (Claude, Gemini)
+- [ ] Real-time collaboration features
+- [ ] Advanced theming system
+- [ ] Plugin sandboxing and security
+- [ ] Performance monitoring and analytics
