@@ -6,9 +6,11 @@ interface HeaderProps {
   toggleSidebar: () => void;
   isSidebarOpen: boolean;
   siteName?: string;
+  Logo?: React.ComponentType;
+  colorScheme?: { primary: string; secondary: string };
 }
 
-const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen, siteName = "Alice" }) => {
+const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen, siteName = "Alice", Logo, colorScheme }) => {
   return (
     <header className="h-16 border-b border-gray-200 bg-white shadow-sm flex items-center justify-between px-4">
       <div className="flex items-center">
@@ -19,8 +21,8 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen, siteName 
         >
           <Menu size={20} />
         </button>
-        <h1 className="ml-4 text-xl font-semibold text-gray-800">{siteName}</h1>
-        <span className="ml-2 px-2 py-0.5 text-xs bg-purple-100 text-purple-800 rounded-full font-medium">
+        {Logo ? <Logo /> : <h1 className="ml-4 text-xl font-semibold text-gray-800">{siteName}</h1>}
+        <span className="ml-2 px-2 py-0.5 text-xs" style={{ background: colorScheme?.secondary || '#EDE9FE', color: colorScheme?.primary || '#6D28D9' }}>
           AI Copilot
         </span>
       </div>

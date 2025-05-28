@@ -1,3 +1,4 @@
+// Deprecated: Logo is now provided by the theme system.
 import React from 'react';
 import { Sparkles } from 'lucide-react';
 
