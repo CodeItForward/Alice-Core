@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
-import { useMessages } from '../../context/MessageContext';
+import { useMessages } from '../../src/context/MessageContext';
 
 const ChatContainer: React.FC = () => {
   const { messages } = useMessages();

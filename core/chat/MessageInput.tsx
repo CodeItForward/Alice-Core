@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Send, Paperclip, Mic } from 'lucide-react';
-import { useMessages } from '../../context/MessageContext';
+import { useMessages } from '../../src/context/MessageContext';
 
 const MessageInput: React.FC = () => {
   const [message, setMessage] = useState('');
