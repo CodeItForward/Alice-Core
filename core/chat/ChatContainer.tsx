@@ -50,7 +50,7 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ openAIApiKey }) => {
         </div>
       </div>
       
-      <div className="p-4 border-t border-gray-200 bg-white">
+      <div className="p-2 border-t border-gray-200 bg-white bg-blue-200" style={{ padding: 16 }}>
         <div className="max-w-3xl mx-auto">
           <MessageInput openAIApiKey={openAIApiKey} />
         </div>
