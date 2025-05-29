@@ -52,11 +52,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, pluginNavLinks
         </nav>
         
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-4">
             <div className="w-8 h-8 rounded-full" style={{ background: colorScheme?.secondary || '#EDE9FE', color: colorScheme?.primary || '#6D28D9' }}>
               <span className="flex items-center justify-center h-full">A</span>
             </div>
-            <div className="text-sm">
+            <div className="text-sm pl-2">
               <p className="font-medium">Alice</p>
               <p className="text-gray-500 text-xs">AI Assistant</p>
             </div>
