@@ -39,5 +39,8 @@
   "files": [
     "core",
     "template"
-  ]
+  ],
+  "bin": {
+    "alice-core": "./cli/index.js"
+  }
 }
