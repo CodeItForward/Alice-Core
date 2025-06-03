@@ -6,6 +6,7 @@ const CreativeCodersPlugin = () => {
   const { user } = useUser();
   const rolesRaw = user?.publicMetadata?.role ?? [];
   const roles: string[] = Array.isArray(rolesRaw) ? rolesRaw : [rolesRaw];
+  console.log('Creative Coders roles:', roles);
   if (!roles.includes('creative-coders')) return null;
   return <CreativeCodersPage />;
 };
