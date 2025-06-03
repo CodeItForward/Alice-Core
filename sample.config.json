@@ -1,5 +1,6 @@
 {
   "siteName": "Alice Copilot",
   "openAIApiKey": "YOUR_OPENAI_KEY",
-  "theme": "default"
+  "theme": "default",
+  "plugins": ["sample-plugin"]
 } 
