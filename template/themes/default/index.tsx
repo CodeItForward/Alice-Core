@@ -6,7 +6,7 @@ const Logo = () => (
     <div className="flex items-center justify-center h-8 w-8 rounded-md bg-purple-800 text-white">
       <Sparkles size={18} />
     </div>
-    <span className="ml-2 font-semibold text-lg text-purple-900">Alice | CodeItForward</span>
+    <span className="ml-2 font-semibold text-lg text-purple-900">Alice [Code] It {'>'} Forward</span>
   </div>
 );
 
@@ -16,7 +16,7 @@ const colorScheme = {
 };
 
 const theme = {
-  siteTitle: 'Alice | CodeItForward',
+  siteTitle: 'Alice [Code] It > Forward',
   Logo,
   colorScheme,
 };

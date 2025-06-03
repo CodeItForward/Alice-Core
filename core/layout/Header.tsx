@@ -1,6 +1,6 @@
 import React from 'react';
 import { Menu, Bell, HelpCircle } from 'lucide-react';
-import UserDropdown from '../ui/UserDropdown';
+import { UserButton } from '@clerk/clerk-react';
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -35,7 +35,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen, siteName 
         <button className="p-2 rounded-full hover:bg-gray-100 transition-colors duration-200">
           <HelpCircle size={20} />
         </button>
-        <UserDropdown />
+        <UserButton />
       </div>
     </header>
   );

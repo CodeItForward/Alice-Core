@@ -1,6 +1,10 @@
 import React from "react";
 import config from "../config.json";
 import AliceApp from "../core/AliceApp.tsx";
+import { AuthProvider } from "../core/context/AuthContext";
+import AuthGate from './AuthGate';
+
+const openAIApiKey = import.meta.env.VITE_OPENAI_API_KEY;
 
 async function loadPlugins(pluginNames: string[]) {
   const pluginModules = await Promise.all(
@@ -19,6 +23,10 @@ export default function App() {
   if (!plugins.length) return <div>Loading plugins...</div>;
 
   return (
-    <AliceApp config={config} plugins={plugins} />
+    <AuthGate>
+      <AuthProvider>
+        <AliceApp config={{ ...config, openAIApiKey }} plugins={plugins} />
+      </AuthProvider>
+    </AuthGate>
   );
 }
