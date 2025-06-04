@@ -83,9 +83,9 @@ const WorkspacePage: React.FC = () => {
   const section = workspaceSections.find(s => s.title === selectedSection);
 
   return (
-    <div className="flex h-full bg-gray-50">
+    <div className="flex flex-col md:flex-row h-full bg-gray-50">
       {/* Sidebar for workspace sections */}
-      <div className="w-56 bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
+      <div className="w-full md:w-56 bg-white border-b md:border-b-0 md:border-r border-gray-200 flex flex-col flex-shrink-0">
         <div className="p-4 font-bold text-lg border-b border-gray-100">Workspace Sections</div>
         <ul className="flex-1 overflow-auto">
           {workspaceSections.map(s => (
@@ -119,7 +119,7 @@ const WorkspacePage: React.FC = () => {
         </div>
       </div>
       {/* AI Co-pilot */}
-      <div className="w-full md:w-96 flex-shrink-0 border-t md:border-t-0 md:border-l border-gray-200 bg-white flex flex-col min-w-[320px] max-w-full md:max-w-xs">
+      <div className="w-full md:w-96 flex-shrink-0 border-t md:border-t-0 md:border-l border-gray-200 bg-white flex flex-col min-w-0 max-w-full">
         <div className="p-4 font-bold text-lg border-b border-gray-100 text-purple-700">AI Co-pilot</div>
         <div className="flex-1 p-4 overflow-y-auto space-y-2 max-h-96">
           {aiMessages.map((msg, idx) => (
