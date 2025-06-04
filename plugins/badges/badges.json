@@ -1,0 +1,157 @@
+[
+    {
+      "badgeId": "Curiosity-Rover",
+      "badgeName": "Curiosity Rover",
+      "type": "Individual",
+      "order": 1,
+      "description": "Awarded for boldly exploring new AI tools and demonstrating curiosity through hands-on learning."
+    },
+    {
+      "badgeId": "Truth-Detective",
+      "badgeName": "Truth Detective",
+      "type": "Individual",
+      "order": 2,
+      "description": "Given for spotting errors or misleading answers from AI and calling them out with evidence."
+    },
+    {
+      "badgeId": "Myth-Buster",
+      "badgeName": "Myth Buster",
+      "type": "Individual",
+      "order": 3,
+      "description": "Earned by fact-checking AI-generated content and busting myths through research and verification."
+    },
+    {
+      "badgeId": "Bias-Bouncer",
+      "badgeName": "Bias Bouncer",
+      "type": "Individual",
+      "order": 4,
+      "description": "For identifying bias or unfairness in AI outputs and suggesting or making improvements."
+    },
+    {
+      "badgeId": "Safety-Ninja",
+      "badgeName": "Safety Ninja",
+      "type": "Individual",
+      "order": 6,
+      "description": "Granted to those who demonstrate responsible AI use and protect themselves or their team from risky outcomes."
+    },
+    {
+      "badgeId": "Red-Flag-Raiser",
+      "badgeName": "Red Flag Raiser",
+      "type": "Individual",
+      "order": 7,
+      "description": "For bravely flagging suspicious, incorrect, or potentially harmful AI results to others."
+    },
+    {
+      "badgeId": "Ethics-Explorer",
+      "badgeName": "Ethics Explorer",
+      "type": "Individual",
+      "order": 8,
+      "description": "Recognizes deep reflection on AI’s ethical and societal impact."
+    },
+    {
+      "badgeId": "Squad-Goals",
+      "badgeName": "Squad Goals",
+      "type": "Team",
+      "order": 9,
+      "description": "For forming a collaborative, inclusive, and ready-to-build project team."
+    },
+    {
+      "badgeId": "Visionary",
+      "badgeName": "Visionary",
+      "type": "Team",
+      "order": 10,
+      "description": "Given for crafting a bold team mission and defining a clear product vision or problem statement."
+    },
+    {
+      "badgeId": "Market-Mapper",
+      "badgeName": "Market Mapper",
+      "type": "Team",
+      "order": 11,
+      "description": "Awarded for researching competitors, identifying audiences, and mapping the opportunity space for your product."
+    },
+    {
+      "badgeId": "UX-Dreamer",
+      "badgeName": "UX Dreamer",
+      "type": "Team",
+      "order": 12,
+      "description": "For creating wireframes, mockups, or user journeys to guide product development."
+    },
+    {
+      "badgeId": "Visual-Maestro",
+      "badgeName": "Visual Maestro",
+      "type": "Team",
+      "order": 13,
+      "description": "Earned by generating outstanding visuals for your product using AI tools like Midjourney."
+    },
+    {
+      "badgeId": "Digital-Storyteller",
+      "badgeName": "Digital Storyteller",
+      "type": "Team",
+      "order": 14,
+      "description": "Given for writing, storyboarding, or producing a compelling video or narrative using Sora or similar AI tools."
+    },
+    {
+      "badgeId": "Prototype-Pioneer",
+      "badgeName": "Prototype Pioneer",
+      "type": "Team",
+      "order": 15,
+      "description": "For building and sharing your first working product prototype using Bolt, Cursor, or other AI/code tools."
+    },
+    {
+      "badgeId": "Prototype-Pirate",
+      "badgeName": "Prototype Pirate",
+      "type": "Team",
+      "order": 16,
+      "description": "For taking risks and creatively hacking together early prototypes or demos."
+    },
+    {
+      "badgeId": "AI-Integrator",
+      "badgeName": "AI Integrator",
+      "type": "Team",
+      "order": 17,
+      "description": "Awarded for successfully connecting and orchestrating multiple AI tools to enhance your product."
+    },
+    {
+      "badgeId": "Feedback-Award",
+      "badgeName": "Feedback Award",
+      "type": "Team",
+      "order": 18,
+      "description": "Given for collecting, sharing, and acting on user or team feedback to iterate and improve your project."
+    },
+    {
+      "badgeId": "Lauch-Legends",
+      "badgeName": "Launch Legends",
+      "type": "Team",
+      "order": 19,
+      "description": "For deploying or launching your live site, MVP, or project update to a real audience."
+    },
+    {
+      "badgeId": "Pitch-Perfect",
+      "badgeName": "Pitch Perfect",
+      "type": "Team",
+      "order": 20,
+      "description": "Earned by delivering a standout product presentation, video pitch, or demo."
+    },
+    {
+      "badgeId": "Growth-Hacker",
+      "badgeName": "Growth Hacker",
+      "type": "Team",
+      "order": 21,
+      "description": "For experimenting with outreach, growth tactics, or using AI for marketing and user engagement."
+    },
+    {
+      "badgeId": "Resilience-Badge",
+      "badgeName": "Resilience Badge",
+      "type": "Team",
+      "order": 22,
+      "description": "Awarded to teams that overcome setbacks, adapt to change, and persist in the face of challenges."
+    },
+    {
+      "badgeId": "Wizdom-Wizards",
+      "badgeName": "Wisdom Wizards",
+      "type": "Team",
+      "order": 23,
+      "description": "For reflecting deeply on your learning journey, sharing insights, and inspiring others."
+    }
+  ]
+  
