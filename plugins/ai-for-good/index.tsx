@@ -2,9 +2,10 @@ import React from 'react';
 import AiForGoodPage from './AiForGoodPage';
 import { useUser } from '@clerk/clerk-react';
 import AchievementsPage from './AchievementsPage';
-import ProjectFilesPage from './ProjectFilesPage';
+import WorkspacePage from './WorkspacePage';
 import KnowledgebasePage from './KnowledgebasePage';
 import ProjectBoardPage from './ProjectBoardPage';
+import TestFlexLayout from './TestFlexLayout';
 
 const AiForGoodPlugin = () => {
   const { user } = useUser();
@@ -43,7 +44,7 @@ export default {
       children: [
         { label: 'Team Chat', path: '/ai-for-good' },
         { label: 'Achievements', path: '/ai-for-good/achievements' },
-        { label: 'Project Files', path: '/ai-for-good/project-files' },
+        { label: 'Workspace', path: '/ai-for-good/workspace' },
         { label: 'Knowledgebase', path: '/ai-for-good/knowledgebase' },
         { label: 'Project Board', path: '/ai-for-good/project-board' },
       ]
@@ -52,8 +53,9 @@ export default {
   routes: [
     { path: '/ai-for-good', component: AiForGoodPlugin },
     { path: '/ai-for-good/achievements', component: AchievementsPage },
-    { path: '/ai-for-good/project-files', component: ProjectFilesPage },
+    { path: '/ai-for-good/workspace', component: WorkspacePage },
     { path: '/ai-for-good/knowledgebase', component: KnowledgebasePage },
     { path: '/ai-for-good/project-board', component: ProjectBoardPage },
+    { path: '/ai-for-good/test-flex', component: TestFlexLayout },
   ]
 }; 
