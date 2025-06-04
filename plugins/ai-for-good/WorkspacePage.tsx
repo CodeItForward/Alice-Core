@@ -83,45 +83,48 @@ const WorkspacePage: React.FC = () => {
   const section = workspaceSections.find(s => s.title === selectedSection);
 
   return (
-    <div className="flex flex-col md:flex-row h-full bg-gray-50">
-      {/* Sidebar for workspace sections */}
-      <div className="order-1 md:order-none w-full md:w-56 bg-white border-b md:border-b-0 md:border-r border-gray-200 flex flex-col flex-shrink-0">
-        <div className="p-4 font-bold text-lg border-b border-gray-100">Workspace Sections</div>
-        <ul className="flex-1 overflow-auto">
-          {workspaceSections.map(s => (
-            <li key={s.title}>
-              <button
-                className={`w-full text-left px-4 py-2 hover:bg-purple-50 ${selectedSection === s.title ? 'bg-purple-100 font-semibold' : ''}`}
-                onClick={() => setSelectedSection(s.title)}
-              >
-                {s.title}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
-      {/* Main content for selected section */}
-      <div className="order-2 md:order-none flex-1 flex flex-col h-full p-6 overflow-auto min-w-0">
-        <h1 className="text-2xl font-bold mb-6">{section?.title}</h1>
-        <div className="space-y-8">
-          {section?.items.map(item => (
-            <div key={item.label} className="bg-white rounded-lg shadow p-4 border border-gray-200">
-              <label className="block font-medium mb-1">{item.label}</label>
-              <input
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-400"
-                type="text"
-                placeholder={item.placeholder}
-                value={fields[item.label] || ''}
-                onChange={e => handleFieldChange(item.label, e.target.value)}
-              />
-            </div>
-          ))}
+    <div className="flex flex-col min-h-screen bg-gray-50">
+      {/* Row 1: Sidebar + Main */}
+      <div className="flex flex-col md:flex-row flex-1 min-h-0">
+        {/* Sidebar for workspace sections */}
+        <div className="bg-white border-b md:border-b-0 md:border-r border-gray-200 flex flex-col flex-shrink-0 md:w-56">
+          <div className="p-4 font-bold text-lg border-b border-gray-100">Workspace Sections</div>
+          <ul className="flex-1 overflow-auto">
+            {workspaceSections.map(s => (
+              <li key={s.title}>
+                <button
+                  className={`w-full text-left px-4 py-2 hover:bg-purple-50 ${selectedSection === s.title ? 'bg-purple-100 font-semibold' : ''}`}
+                  onClick={() => setSelectedSection(s.title)}
+                >
+                  {s.title}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+        {/* Main content for selected section */}
+        <div className="flex-1 flex flex-col h-full p-6 overflow-auto min-w-0">
+          <h1 className="text-2xl font-bold mb-6">{section?.title}</h1>
+          <div className="space-y-8">
+            {section?.items.map(item => (
+              <div key={item.label} className="bg-white rounded-lg shadow p-4 border border-gray-200">
+                <label className="block font-medium mb-1">{item.label}</label>
+                <input
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  type="text"
+                  placeholder={item.placeholder}
+                  value={fields[item.label] || ''}
+                  onChange={e => handleFieldChange(item.label, e.target.value)}
+                />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-      {/* AI Co-pilot */}
-      <div className="order-3 md:order-none w-full md:w-96 flex-shrink-0 border-t md:border-t-0 md:border-l border-gray-200 bg-white flex flex-col min-w-0 max-w-full">
+      {/* Row 2: AI Co-pilot */}
+      <div className="bg-white border-t border-gray-200 flex flex-col min-w-0 w-full shrink-0 h-64">
         <div className="p-4 font-bold text-lg border-b border-gray-100 text-purple-700">AI Co-pilot</div>
-        <div className="flex-1 p-4 overflow-y-auto space-y-2 max-h-96">
+        <div className="flex-1 p-4 overflow-y-auto space-y-2">
           {aiMessages.map((msg, idx) => (
             <div key={idx} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`px-4 py-2 rounded-lg ${msg.sender === 'user' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-800'}`}>{msg.text}</div>
