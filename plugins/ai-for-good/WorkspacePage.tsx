@@ -59,6 +59,7 @@ const workspaceSections = [
 
 const WorkspacePage: React.FC = () => {
   const [fields, setFields] = useState<{ [key: string]: string }>({});
+  const [selectedSection, setSelectedSection] = useState(workspaceSections[0].title);
   const [aiInput, setAiInput] = useState('');
   const [aiMessages, setAiMessages] = useState([
     { sender: 'ai', text: 'Hi! I am your AI co-pilot. Ask me anything about product development.' },
@@ -79,29 +80,40 @@ const WorkspacePage: React.FC = () => {
     setAiInput('');
   };
 
+  const section = workspaceSections.find(s => s.title === selectedSection);
+
   return (
-    <div className="flex flex-col md:flex-row h-full bg-gray-50">
-      {/* Workspace structure */}
-      <div className="flex-1 p-6 overflow-auto">
-        <h1 className="text-2xl font-bold mb-6">Workspace</h1>
+    <div className="flex h-full bg-gray-50">
+      {/* Sidebar for workspace sections */}
+      <div className="w-56 bg-white border-r border-gray-200 flex flex-col">
+        <div className="p-4 font-bold text-lg border-b border-gray-100">Workspace Sections</div>
+        <ul className="flex-1 overflow-auto">
+          {workspaceSections.map(s => (
+            <li key={s.title}>
+              <button
+                className={`w-full text-left px-4 py-2 hover:bg-purple-50 ${selectedSection === s.title ? 'bg-purple-100 font-semibold' : ''}`}
+                onClick={() => setSelectedSection(s.title)}
+              >
+                {s.title}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+      {/* Main content for selected section */}
+      <div className="flex-1 flex flex-col h-full p-6 overflow-auto">
+        <h1 className="text-2xl font-bold mb-6">{section?.title}</h1>
         <div className="space-y-8">
-          {workspaceSections.map(section => (
-            <div key={section.title} className="bg-white rounded-lg shadow p-4 border border-gray-200">
-              <div className="text-xl font-semibold mb-4 text-purple-700">{section.title}</div>
-              <div className="space-y-4">
-                {section.items.map(item => (
-                  <div key={item.label}>
-                    <label className="block font-medium mb-1">{item.label}</label>
-                    <input
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-400"
-                      type="text"
-                      placeholder={item.placeholder}
-                      value={fields[item.label] || ''}
-                      onChange={e => handleFieldChange(item.label, e.target.value)}
-                    />
-                  </div>
-                ))}
-              </div>
+          {section?.items.map(item => (
+            <div key={item.label} className="bg-white rounded-lg shadow p-4 border border-gray-200">
+              <label className="block font-medium mb-1">{item.label}</label>
+              <input
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                type="text"
+                placeholder={item.placeholder}
+                value={fields[item.label] || ''}
+                onChange={e => handleFieldChange(item.label, e.target.value)}
+              />
             </div>
           ))}
         </div>
