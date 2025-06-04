@@ -14,6 +14,16 @@ const initialColumns = {
 };
 
 const columnOrder = ['To-Do', 'In Progress', 'Done'];
+const columnColors = {
+  'To-Do': 'bg-blue-200 text-blue-900',
+  'In Progress': 'bg-yellow-200 text-yellow-900',
+  'Done': 'bg-green-200 text-green-900',
+};
+const cardBorderColors = {
+  'To-Do': 'border-blue-300',
+  'In Progress': 'border-yellow-300',
+  'Done': 'border-green-300',
+};
 
 const ProjectBoardPage: React.FC = () => {
   const [columns, setColumns] = useState(initialColumns);
@@ -42,16 +52,16 @@ const ProjectBoardPage: React.FC = () => {
         {columnOrder.map(col => (
           <div
             key={col}
-            className="bg-gray-100 rounded-lg shadow-md flex-1 min-w-[300px] max-w-xs flex flex-col"
+            className="bg-gray-100 rounded-lg shadow-md flex-1 min-w-[300px] max-w-xs flex flex-col border-2 border-gray-200"
             onDragOver={e => e.preventDefault()}
             onDrop={() => handleDrop(col)}
           >
-            <div className="p-4 font-semibold text-lg border-b border-gray-200 text-center bg-gray-200 rounded-t-lg">{col}</div>
+            <div className={`p-4 font-semibold text-lg border-b border-gray-200 text-center rounded-t-lg ${columnColors[col]}`}>{col}</div>
             <div className="flex-1 p-4 space-y-4 min-h-[100px]">
               {columns[col].map(card => (
                 <div
                   key={card.id}
-                  className="bg-white rounded shadow p-4 cursor-move border border-gray-300"
+                  className={`bg-white rounded shadow p-4 cursor-move border-2 ${cardBorderColors[col]} hover:bg-gray-50 transition`}
                   draggable
                   onDragStart={() => handleDragStart(card, col)}
                 >
