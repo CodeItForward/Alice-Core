@@ -85,7 +85,7 @@ const WorkspacePage: React.FC = () => {
   return (
     <div className="flex h-full bg-gray-50">
       {/* Sidebar for workspace sections */}
-      <div className="w-56 bg-white border-r border-gray-200 flex flex-col">
+      <div className="w-56 bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
         <div className="p-4 font-bold text-lg border-b border-gray-100">Workspace Sections</div>
         <ul className="flex-1 overflow-auto">
           {workspaceSections.map(s => (
@@ -101,7 +101,7 @@ const WorkspacePage: React.FC = () => {
         </ul>
       </div>
       {/* Main content for selected section */}
-      <div className="flex-1 flex flex-col h-full p-6 overflow-auto">
+      <div className="flex-1 flex flex-col h-full p-6 overflow-auto min-w-0">
         <h1 className="text-2xl font-bold mb-6">{section?.title}</h1>
         <div className="space-y-8">
           {section?.items.map(item => (
@@ -119,7 +119,7 @@ const WorkspacePage: React.FC = () => {
         </div>
       </div>
       {/* AI Co-pilot */}
-      <div className="w-full md:w-96 border-t md:border-t-0 md:border-l border-gray-200 bg-white flex flex-col">
+      <div className="w-full md:w-96 flex-shrink-0 border-t md:border-t-0 md:border-l border-gray-200 bg-white flex flex-col min-w-[320px] max-w-full md:max-w-xs">
         <div className="p-4 font-bold text-lg border-b border-gray-100 text-purple-700">AI Co-pilot</div>
         <div className="flex-1 p-4 overflow-y-auto space-y-2 max-h-96">
           {aiMessages.map((msg, idx) => (
