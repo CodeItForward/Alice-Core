@@ -119,7 +119,7 @@
       "description": "Given for collecting, sharing, and acting on user or team feedback to iterate and improve your project."
     },
     {
-      "badgeId": "Lauch-Legends",
+      "badgeId": "Launch-Legends",
       "badgeName": "Launch Legends",
       "type": "Team",
       "order": 19,
@@ -133,8 +133,8 @@
       "description": "Earned by delivering a standout product presentation, video pitch, or demo."
     },
     {
-      "badgeId": "Growth-Hacker",
-      "badgeName": "Growth Hacker",
+      "badgeId": "Growth-Hackers",
+      "badgeName": "Growth Hackers",
       "type": "Team",
       "order": 21,
       "description": "For experimenting with outreach, growth tactics, or using AI for marketing and user engagement."
