@@ -4,6 +4,7 @@ import { useUser } from '@clerk/clerk-react';
 import AchievementsPage from './AchievementsPage';
 import ProjectFilesPage from './ProjectFilesPage';
 import KnowledgebasePage from './KnowledgebasePage';
+import ProjectBoardPage from './ProjectBoardPage';
 
 const AiForGoodPlugin = () => {
   const { user } = useUser();
@@ -44,6 +45,7 @@ export default {
         { label: 'Achievements', path: '/ai-for-good/achievements' },
         { label: 'Project Files', path: '/ai-for-good/project-files' },
         { label: 'Knowledgebase', path: '/ai-for-good/knowledgebase' },
+        { label: 'Project Board', path: '/ai-for-good/project-board' },
       ]
     }
   ],
@@ -52,5 +54,6 @@ export default {
     { path: '/ai-for-good/achievements', component: AchievementsPage },
     { path: '/ai-for-good/project-files', component: ProjectFilesPage },
     { path: '/ai-for-good/knowledgebase', component: KnowledgebasePage },
+    { path: '/ai-for-good/project-board', component: ProjectBoardPage },
   ]
 }; 
