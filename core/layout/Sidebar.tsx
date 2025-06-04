@@ -1,17 +1,23 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { MessageSquarePlus, ChevronLeft } from 'lucide-react';
+import { MessageSquarePlus, ChevronLeft, ChevronDown, ChevronRight } from 'lucide-react';
 // import { Logo } from '../ui/Logo';
 
 interface SidebarProps {
   isOpen: boolean;
   toggleSidebar: () => void;
-  pluginNavLinks?: Array<{ label: string; path: string }>;
+  pluginNavLinks?: Array<{ label: string; path: string; children?: Array<{ label: string; path: string }> }>;
   Logo?: React.ComponentType;
   colorScheme?: { primary: string; secondary: string };
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, pluginNavLinks = [], Logo, colorScheme }) => {
+  const [openSection, setOpenSection] = React.useState<string | null>(null);
+
+  const handleSectionClick = (path: string) => {
+    setOpenSection(openSection === path ? null : path);
+  };
+
   return (
     <>
       {/* Mobile overlay */}
@@ -42,13 +48,37 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, pluginNavLinks
           <SidebarLink to="/chat" icon={<MessageSquarePlus size={18} />} label="New Chat" />
           
           {/* Plugin navigation links */}
-          {pluginNavLinks.map((navLink, index) => (
-            <SidebarLink 
-              key={`${navLink.path}-${index}`}
-              to={navLink.path}
-              label={navLink.label}
-            />
-          ))}
+          {pluginNavLinks.map((navLink, index) =>
+            navLink.children ? (
+              <div key={`${navLink.path}-${index}`}> 
+                <button
+                  className="flex items-center w-full px-3 py-2 text-gray-700 rounded-md hover:bg-purple-50 hover:text-purple-800 transition-colors duration-200 group font-medium focus:outline-none"
+                  onClick={() => handleSectionClick(navLink.path)}
+                  aria-expanded={openSection === navLink.path}
+                >
+                  <span className="flex-1 text-left">{navLink.label}</span>
+                  {openSection === navLink.path ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                </button>
+                {openSection === navLink.path && (
+                  <div className="ml-4 mt-1 space-y-1">
+                    {navLink.children.map((child: any, childIdx: number) => (
+                      <SidebarLink
+                        key={`${child.path}-${childIdx}`}
+                        to={child.path}
+                        label={child.label}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <SidebarLink 
+                key={`${navLink.path}-${index}`}
+                to={navLink.path}
+                label={navLink.label}
+              />
+            )
+          )}
         </nav>
         
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">

@@ -1,6 +1,9 @@
 import React from 'react';
 import AiForGoodPage from './AiForGoodPage';
 import { useUser } from '@clerk/clerk-react';
+import AchievementsPage from './AchievementsPage';
+import ProjectFilesPage from './ProjectFilesPage';
+import KnowledgebasePage from './KnowledgebasePage';
 
 const AiForGoodPlugin = () => {
   const { user } = useUser();
@@ -33,9 +36,21 @@ const AiForGoodPlugin = () => {
 export default {
   name: 'AI for Good',
   navLinks: [
-    { label: 'AI for Good', path: '/ai-for-good' }
+    {
+      label: 'AI for Good',
+      path: '/ai-for-good',
+      children: [
+        { label: 'Team Chat', path: '/ai-for-good' },
+        { label: 'Achievements', path: '/ai-for-good/achievements' },
+        { label: 'Project Files', path: '/ai-for-good/project-files' },
+        { label: 'Knowledgebase', path: '/ai-for-good/knowledgebase' },
+      ]
+    }
   ],
   routes: [
-    { path: '/ai-for-good', component: AiForGoodPlugin }
+    { path: '/ai-for-good', component: AiForGoodPlugin },
+    { path: '/ai-for-good/achievements', component: AchievementsPage },
+    { path: '/ai-for-good/project-files', component: ProjectFilesPage },
+    { path: '/ai-for-good/knowledgebase', component: KnowledgebasePage },
   ]
 }; 
