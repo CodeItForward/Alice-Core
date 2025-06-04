@@ -62,7 +62,7 @@ const WorkspacePage: React.FC = () => {
   const [selectedSection, setSelectedSection] = useState(workspaceSections[0].title);
   const [aiInput, setAiInput] = useState('');
   const [aiMessages, setAiMessages] = useState([
-    { sender: 'ai', text: 'Hi! I am your AI co-pilot. Ask me anything about product development.' },
+    { sender: 'ai', text: "Hey! I'm Alice. I'm your AI-Copilot. I'm here to help the team work through how AI can assist in product development. Let's get started with some product ideas. What are you thinking?" },
   ]);
 
   const handleFieldChange = (key: string, value: string) => {
@@ -123,7 +123,7 @@ const WorkspacePage: React.FC = () => {
       </div>
       {/* Row 2: AI Co-pilot */}
       <div className="bg-white border-t border-gray-200 flex flex-col min-w-0 w-full shrink-0 h-64">
-        <div className="p-4 font-bold text-lg border-b border-gray-100 text-purple-700">AI Co-pilot</div>
+        <div className="p-4 font-bold text-lg border-b border-gray-100 text-purple-700">Alice Chat</div>
         <div className="flex-1 p-4 overflow-y-auto space-y-2">
           {aiMessages.map((msg, idx) => (
             <div key={idx} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
