@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 
 const channels = [
   { id: 'general', name: 'General' },
   { id: 'random', name: 'Random' },
   { id: 'announcements', name: 'Announcements' },
+  { id: 'course', name: 'Course' },
 ];
 
 const initialMessages = {
@@ -18,23 +19,81 @@ const initialMessages = {
   announcements: [
     { id: 1, user: 'Admin', text: 'Project kickoff at 10am!', time: '08:55' },
   ],
+  course: [
+    { id: 1, user: 'Alice', text: 'Welcome to the Course channel! Mention @alice to ask me a question.', time: '09:00' },
+  ],
 };
+
+const wsUrl = 'wss://restrictedchat.purplemeadow-b77df452.eastus.azurecontainerapps.io/alice/aiforgood/chat';
 
 const AiForGoodPage: React.FC = () => {
   const [selectedChannel, setSelectedChannel] = useState('general');
   const [messages, setMessages] = useState(initialMessages);
   const [input, setInput] = useState('');
+  const wsRef = useRef<WebSocket | null>(null);
+  const [waitingForAlice, setWaitingForAlice] = useState(false);
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
+    const newMsg = {
+      id: Date.now(),
+      user: 'You',
+      text: input,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
     setMessages(prev => ({
       ...prev,
-      [selectedChannel]: [
-        ...prev[selectedChannel],
-        { id: Date.now(), user: 'You', text: input, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
-      ],
+      [selectedChannel]: [...prev[selectedChannel], newMsg],
     }));
+
+    // If in #Course and message contains @alice, send to websocket
+    if (selectedChannel === 'course' && /@alice/i.test(input)) {
+      setWaitingForAlice(true);
+      if (!wsRef.current || wsRef.current.readyState !== 1) {
+        wsRef.current = new window.WebSocket(wsUrl);
+        wsRef.current.onopen = () => {
+          wsRef.current?.send(JSON.stringify({ message: input, username: 'You' }));
+        };
+      } else {
+        wsRef.current.send(JSON.stringify({ message: input, username: 'You' }));
+      }
+      wsRef.current.onmessage = (event) => {
+        setWaitingForAlice(false);
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'video') {
+            setMessages(prev => ({
+              ...prev,
+              [selectedChannel]: [
+                ...prev[selectedChannel],
+                {
+                  id: Date.now() + 1,
+                  user: 'Alice',
+                  text: data.message,
+                  time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                  video_url: data.video_url
+                }
+              ]
+            }));
+          } else if (data.type === 'text') {
+            setMessages(prev => ({
+              ...prev,
+              [selectedChannel]: [
+                ...prev[selectedChannel],
+                {
+                  id: Date.now() + 1,
+                  user: 'Alice',
+                  text: data.message,
+                  time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                }
+              ]
+            }));
+          }
+        } catch {}
+      };
+      wsRef.current.onerror = () => setWaitingForAlice(false);
+    }
     setInput('');
   };
 
@@ -73,9 +132,25 @@ const AiForGoodPage: React.FC = () => {
                   <span className="text-xs text-gray-400">{msg.time}</span>
                 </div>
                 <div className="text-gray-800">{msg.text}</div>
+                {msg.video_url && (
+                  <div className="mt-2">
+                    <iframe
+                      width="320"
+                      height="180"
+                      src={msg.video_url.replace('watch?v=', 'embed/')}
+                      title="YouTube video"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                )}
               </div>
             </div>
           ))}
+          {waitingForAlice && selectedChannel === 'course' && (
+            <div className="text-center text-purple-600">Alice is typing...</div>
+          )}
         </div>
         <form onSubmit={handleSend} className="px-6 py-4 bg-white border-t border-gray-200 flex items-center">
           <input
