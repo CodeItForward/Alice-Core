@@ -4,6 +4,7 @@
   "theme": "default",
   "plugins": [
     "default-chat",
+    "codeitforward-chat",
     "ai-for-good",
     "badges",
     "creative-coders"

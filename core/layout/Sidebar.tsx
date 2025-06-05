@@ -48,10 +48,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, pluginNavLinks
           {pluginNavLinks.some(link => link.path === '/chat' && link.label === 'Chat') && (
             <SidebarLink to="/chat" icon={<MessageSquarePlus size={18} />} label="New Chat" />
           )}
+          {pluginNavLinks.some(link => link.path === '/codeitforward-chat' && link.label === "Let's Chat") && (
+            <SidebarLink to="/codeitforward-chat" icon={<MessageSquarePlus size={18} />} label="Let's Chat" />
+          )}
           
-          {/* Plugin navigation links, but skip the default chat link */}
+          {/* Plugin navigation links, but skip the default chat and CodeItForward chat links */}
           {pluginNavLinks
-            .filter(navLink => !(navLink.path === '/chat' && navLink.label === 'Chat'))
+            .filter(navLink => !((navLink.path === '/chat' && navLink.label === 'Chat') || (navLink.path === '/codeitforward-chat' && navLink.label === "Let's Chat")))
             .map((navLink, index) =>
               navLink.children ? (
                 <div key={`${navLink.path}-${index}`}> 
