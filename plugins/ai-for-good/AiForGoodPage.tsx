@@ -26,12 +26,19 @@ const initialMessages = {
 
 const wsUrl = 'wss://restrictedchat.purplemeadow-b77df452.eastus.azurecontainerapps.io/alice/aiforgood/chat';
 
+const getYouTubeId = (url: string) => {
+  // Handles both youtu.be and youtube.com URLs
+  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+  return match ? match[1] : null;
+};
+
 const AiForGoodPage: React.FC = () => {
   const [selectedChannel, setSelectedChannel] = useState('general');
   const [messages, setMessages] = useState(initialMessages);
   const [input, setInput] = useState('');
   const wsRef = useRef<WebSocket | null>(null);
   const [waitingForAlice, setWaitingForAlice] = useState(false);
+  const [playedVideos, setPlayedVideos] = useState<number[]>([]);
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
@@ -145,19 +152,46 @@ const AiForGoodPage: React.FC = () => {
                   <span className="text-xs text-gray-400">{msg.time}</span>
                 </div>
                 <div className="text-gray-800">{msg.text}</div>
-                {msg.video_url && (
-                  <div className="mt-2">
-                    <iframe
-                      width="320"
-                      height="180"
-                      src={msg.video_url.replace('watch?v=', 'embed/')}
-                      title="YouTube video"
-                      frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
-                  </div>
-                )}
+                {msg.video_url && (() => {
+                  const ytId = getYouTubeId(msg.video_url);
+                  if (!ytId) return null;
+                  const isPlayed = playedVideos.includes(msg.id);
+                  const thumbUrl = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
+                  const embedUrl = `https://www.youtube.com/embed/${ytId}?autoplay=1&vq=hd1080&rel=0`;
+                  return (
+                    <div className="mt-2">
+                      {!isPlayed ? (
+                        <div
+                          className="relative w-80 h-44 cursor-pointer group bg-black/10 rounded-lg overflow-hidden"
+                          style={{ maxWidth: 320, maxHeight: 180 }}
+                          onClick={() => setPlayedVideos(p => [...p, msg.id])}
+                        >
+                          <img
+                            src={thumbUrl}
+                            alt="YouTube thumbnail"
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/40 group-hover:bg-black/60 transition">
+                            <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+                              <circle cx="32" cy="32" r="32" fill="rgba(0,0,0,0.5)" />
+                              <polygon points="26,20 48,32 26,44" fill="#fff" />
+                            </svg>
+                          </div>
+                        </div>
+                      ) : (
+                        <iframe
+                          width="320"
+                          height="180"
+                          src={embedUrl}
+                          title="YouTube video"
+                          frameBorder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           ))}
