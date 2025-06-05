@@ -45,7 +45,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, pluginNavLinks
         </div>
         
         <nav className="p-4 space-y-2">
-          <SidebarLink to="/chat" icon={<MessageSquarePlus size={18} />} label="New Chat" />
+          {pluginNavLinks.some(link => link.path === '/chat' && link.label === 'Chat') && (
+            <SidebarLink to="/chat" icon={<MessageSquarePlus size={18} />} label="New Chat" />
+          )}
           
           {/* Plugin navigation links */}
           {pluginNavLinks.map((navLink, index) =>
