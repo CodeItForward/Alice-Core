@@ -4,6 +4,7 @@ import Sidebar from './layout/Sidebar';
 import Header from './layout/Header';
 import ChatContainer from './chat/ChatContainer';
 import { MessageProvider } from './context/MessageContext';
+import DefaultChatPlugin from '../plugins/default-chat/index';
 
 interface AliceAppProps {
   config: {
@@ -42,11 +43,14 @@ const AliceApp: React.FC<AliceAppProps> = ({ config, plugins }) => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
+  // Always include the default chat plugin first
+  const allPlugins = [DefaultChatPlugin, ...plugins];
+  
   // Collect all nav links from plugins
-  const pluginNavLinks = plugins.flatMap(plugin => plugin.navLinks);
+  const pluginNavLinks = allPlugins.flatMap(plugin => plugin.navLinks);
   
   // Collect all routes from plugins
-  const pluginRoutes = plugins.flatMap(plugin => plugin.routes);
+  const pluginRoutes = allPlugins.flatMap(plugin => plugin.routes);
 
   console.log('AliceApp loaded with config:', config);
   console.log('AliceApp loaded with plugins:', plugins);
@@ -77,10 +81,6 @@ const AliceApp: React.FC<AliceAppProps> = ({ config, plugins }) => {
               />
               <main className="flex-grow overflow-hidden">
                 <Routes>
-                  {/* Default chat route */}
-                  <Route path="/" element={<ChatContainer openAIApiKey={config.openAIApiKey} />} />
-                  <Route path="/chat" element={<ChatContainer openAIApiKey={config.openAIApiKey} />} />
-                  
                   {/* Plugin routes */}
                   {pluginRoutes.map((route, index) => (
                     <Route 
@@ -91,7 +91,7 @@ const AliceApp: React.FC<AliceAppProps> = ({ config, plugins }) => {
                   ))}
                   
                   {/* Fallback to chat */}
-                  <Route path="*" element={<Navigate to="/" replace />} />
+                  <Route path="*" element={<Navigate to="/chat" replace />} />
                 </Routes>
               </main>
             </div>
