@@ -49,38 +49,40 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, pluginNavLinks
             <SidebarLink to="/chat" icon={<MessageSquarePlus size={18} />} label="New Chat" />
           )}
           
-          {/* Plugin navigation links */}
-          {pluginNavLinks.map((navLink, index) =>
-            navLink.children ? (
-              <div key={`${navLink.path}-${index}`}> 
-                <button
-                  className="flex items-center w-full px-3 py-2 text-gray-700 rounded-md hover:bg-purple-50 hover:text-purple-800 transition-colors duration-200 group font-medium focus:outline-none"
-                  onClick={() => handleSectionClick(navLink.path)}
-                  aria-expanded={openSection === navLink.path}
-                >
-                  <span className="flex-1 text-left">{navLink.label}</span>
-                  {openSection === navLink.path ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-                </button>
-                {openSection === navLink.path && (
-                  <div className="ml-4 mt-1 space-y-1">
-                    {navLink.children.map((child: any, childIdx: number) => (
-                      <SidebarLink
-                        key={`${child.path}-${childIdx}`}
-                        to={child.path}
-                        label={child.label}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <SidebarLink 
-                key={`${navLink.path}-${index}`}
-                to={navLink.path}
-                label={navLink.label}
-              />
-            )
-          )}
+          {/* Plugin navigation links, but skip the default chat link */}
+          {pluginNavLinks
+            .filter(navLink => !(navLink.path === '/chat' && navLink.label === 'Chat'))
+            .map((navLink, index) =>
+              navLink.children ? (
+                <div key={`${navLink.path}-${index}`}> 
+                  <button
+                    className="flex items-center w-full px-3 py-2 text-gray-700 rounded-md hover:bg-purple-50 hover:text-purple-800 transition-colors duration-200 group font-medium focus:outline-none"
+                    onClick={() => handleSectionClick(navLink.path)}
+                    aria-expanded={openSection === navLink.path}
+                  >
+                    <span className="flex-1 text-left">{navLink.label}</span>
+                    {openSection === navLink.path ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                  </button>
+                  {openSection === navLink.path && (
+                    <div className="ml-4 mt-1 space-y-1">
+                      {navLink.children.map((child: any, childIdx: number) => (
+                        <SidebarLink
+                          key={`${child.path}-${childIdx}`}
+                          to={child.path}
+                          label={child.label}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <SidebarLink 
+                  key={`${navLink.path}-${index}`}
+                  to={navLink.path}
+                  label={navLink.label}
+                />
+              )
+            )}
         </nav>
         
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
