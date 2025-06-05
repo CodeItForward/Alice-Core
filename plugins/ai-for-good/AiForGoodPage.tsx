@@ -50,15 +50,11 @@ const AiForGoodPage: React.FC = () => {
     // If in #Course and message contains @alice, send to websocket
     if (selectedChannel === 'course' && /@alice/i.test(input)) {
       setWaitingForAlice(true);
-      if (!wsRef.current || wsRef.current.readyState !== 1) {
-        wsRef.current = new window.WebSocket(wsUrl);
-        wsRef.current.onopen = () => {
-          wsRef.current?.send(JSON.stringify({ message: input, username: 'You' }));
-        };
-      } else {
-        wsRef.current.send(JSON.stringify({ message: input, username: 'You' }));
-      }
-      wsRef.current.onmessage = (event) => {
+      const ws = new window.WebSocket(wsUrl);
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ message: input, username: 'You' }));
+      };
+      ws.onmessage = (event) => {
         setWaitingForAlice(false);
         try {
           const data = JSON.parse(event.data);
@@ -91,8 +87,25 @@ const AiForGoodPage: React.FC = () => {
             }));
           }
         } catch {}
+        ws.close();
       };
-      wsRef.current.onerror = () => setWaitingForAlice(false);
+      ws.onerror = () => {
+        setWaitingForAlice(false);
+        setMessages(prev => ({
+          ...prev,
+          [selectedChannel]: [
+            ...prev[selectedChannel],
+            {
+              id: Date.now() + 2,
+              user: 'System',
+              text: 'Error: Could not connect to Alice or no response received.',
+              time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            }
+          ]
+        }));
+        ws.close();
+      };
+      ws.onclose = () => setWaitingForAlice(false);
     }
     setInput('');
   };
