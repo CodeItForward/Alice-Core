@@ -4,7 +4,6 @@ import Sidebar from './layout/Sidebar';
 import Header from './layout/Header';
 import ChatContainer from './chat/ChatContainer';
 import { MessageProvider } from './context/MessageContext';
-import DefaultChatPlugin from '../plugins/default-chat/index';
 
 interface AliceAppProps {
   config: {
@@ -43,14 +42,11 @@ const AliceApp: React.FC<AliceAppProps> = ({ config, plugins }) => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
-  // Always include the default chat plugin first
-  const allPlugins = [DefaultChatPlugin, ...plugins];
-  
   // Collect all nav links from plugins
-  const pluginNavLinks = allPlugins.flatMap(plugin => plugin.navLinks);
+  const pluginNavLinks = plugins.flatMap(plugin => plugin.navLinks);
   
   // Collect all routes from plugins
-  const pluginRoutes = allPlugins.flatMap(plugin => plugin.routes);
+  const pluginRoutes = plugins.flatMap(plugin => plugin.routes);
 
   console.log('AliceApp loaded with config:', config);
   console.log('AliceApp loaded with plugins:', plugins);

@@ -2,5 +2,10 @@
   "siteName": "Alice Copilot",
   "openAIApiKey": "YOUR_OPENAI_KEY",
   "theme": "default",
-  "plugins": ["sample-plugin"]
+  "plugins": [
+    "default-chat",
+    "ai-for-good",
+    "badges",
+    "creative-coders"
+  ]
 } 

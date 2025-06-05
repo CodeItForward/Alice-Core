@@ -4,7 +4,7 @@ import ChatContainer from '../../core/chat/ChatContainer';
 const DefaultChatPlugin = () => <ChatContainer />;
 
 export default {
-  name: 'Default Chat',
+  name: 'Default',
   navLinks: [
     { label: 'Chat', path: '/chat' }
   ],
