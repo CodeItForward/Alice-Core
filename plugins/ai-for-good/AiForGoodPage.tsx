@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useUser } from '@clerk/clerk-react';
 
 const channels = [
   { id: 'general', name: 'General' },
@@ -32,13 +33,61 @@ const getYouTubeId = (url: string) => {
   return match ? match[1] : null;
 };
 
+const AI_COLOR = 'bg-blue-500 text-white';
+const USER_COLOR = 'bg-purple-200 text-purple-700';
+const OTHER_COLORS = [
+  'bg-green-400 text-white',
+  'bg-yellow-400 text-yellow-900',
+  'bg-pink-400 text-white',
+  'bg-orange-400 text-white',
+  'bg-cyan-500 text-white',
+  'bg-red-400 text-white',
+  'bg-indigo-400 text-white',
+  'bg-teal-500 text-white',
+];
+
+function getOtherUserColor(name, taken) {
+  // Deterministically assign a color based on name, skipping taken colors
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  let idx = Math.abs(hash) % OTHER_COLORS.length;
+  let tries = 0;
+  while (taken.has(idx) && tries < OTHER_COLORS.length) {
+    idx = (idx + 1) % OTHER_COLORS.length;
+    tries++;
+  }
+  taken.add(idx);
+  return OTHER_COLORS[idx];
+}
+
 const AiForGoodPage: React.FC = () => {
+  const { user } = useUser();
+  const currentUserName = user?.firstName || user?.username || 'You';
   const [selectedChannel, setSelectedChannel] = useState('general');
   const [messages, setMessages] = useState(initialMessages);
   const [input, setInput] = useState('');
   const wsRef = useRef<WebSocket | null>(null);
   const [waitingForAlice, setWaitingForAlice] = useState(false);
   const [playedVideos, setPlayedVideos] = useState<number[]>([]);
+
+  // Build a map of user -> color for this channel
+  const userColorMap = (() => {
+    const taken = new Set();
+    const map = {};
+    messages[selectedChannel].forEach(msg => {
+      if (msg.user === 'Alice') {
+        map[msg.user] = AI_COLOR;
+      } else if (msg.user === 'You' || msg.user === currentUserName) {
+        map[msg.user] = USER_COLOR;
+      }
+    });
+    messages[selectedChannel].forEach(msg => {
+      if (!map[msg.user]) {
+        map[msg.user] = getOtherUserColor(msg.user, taken);
+      }
+    });
+    return map;
+  })();
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,7 +192,9 @@ const AiForGoodPage: React.FC = () => {
         <div className="flex-1 overflow-auto px-6 py-4 space-y-4 bg-gray-50" style={{ minHeight: 0 }}>
           {messages[selectedChannel].map(msg => (
             <div key={msg.id} className="flex items-start space-x-3">
-              <div className="w-9 h-9 rounded-full bg-purple-200 flex items-center justify-center font-bold text-purple-700">
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-base ${userColorMap[msg.user]}`}
+                title={msg.user}
+              >
                 {msg.user[0]}
               </div>
               <div>
