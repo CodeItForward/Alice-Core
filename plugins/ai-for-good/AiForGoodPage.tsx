@@ -33,17 +33,17 @@ const getYouTubeId = (url: string) => {
   return match ? match[1] : null;
 };
 
-const AI_COLOR = 'bg-blue-500 text-white';
+const AI_COLOR = 'bg-blue-200 text-blue-800';
 const USER_COLOR = 'bg-purple-200 text-purple-700';
 const OTHER_COLORS = [
-  'bg-green-400 text-white',
-  'bg-yellow-400 text-yellow-900',
-  'bg-pink-400 text-white',
-  'bg-orange-400 text-white',
-  'bg-cyan-500 text-white',
-  'bg-red-400 text-white',
-  'bg-indigo-400 text-white',
-  'bg-teal-500 text-white',
+  'bg-green-200 text-green-800',
+  'bg-yellow-200 text-yellow-800',
+  'bg-pink-200 text-pink-800',
+  'bg-orange-200 text-orange-800',
+  'bg-cyan-200 text-cyan-800',
+  'bg-red-200 text-red-800',
+  'bg-indigo-200 text-indigo-800',
+  'bg-teal-200 text-teal-800',
 ];
 
 function getOtherUserColor(name, taken) {
