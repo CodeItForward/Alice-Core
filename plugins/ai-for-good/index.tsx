@@ -6,6 +6,7 @@ import WorkspacePage from './WorkspacePage';
 import KnowledgebasePage from './KnowledgebasePage';
 import ProjectBoardPage from './ProjectBoardPage';
 import TestFlexLayout from './TestFlexLayout';
+import TeamSettingsPage from './TeamSettingsPage';
 
 const AiForGoodPlugin = () => {
   const { user } = useUser();
@@ -42,6 +43,7 @@ export default {
       label: 'AI for Good',
       path: '/ai-for-good',
       children: [
+        { label: 'Team Settings', path: '/ai-for-good/team-settings' },
         { label: 'Team Chat', path: '/ai-for-good' },
         { label: 'Achievements', path: '/ai-for-good/achievements' },
         { label: 'Workspace', path: '/ai-for-good/workspace' },
@@ -51,6 +53,7 @@ export default {
     }
   ],
   routes: [
+    { path: '/ai-for-good/team-settings', component: TeamSettingsPage },
     { path: '/ai-for-good', component: AiForGoodPlugin },
     { path: '/ai-for-good/achievements', component: AchievementsPage },
     { path: '/ai-for-good/workspace', component: WorkspacePage },
