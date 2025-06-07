@@ -38,6 +38,13 @@ const AliceApp: React.FC<AliceAppProps> = ({ config, plugins }) => {
     loadTheme();
   }, [config.theme]);
 
+  // Update document title when theme changes
+  React.useEffect(() => {
+    if (theme) {
+      document.title = theme.siteTitle;
+    }
+  }, [theme]);
+
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
