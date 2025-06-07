@@ -23,10 +23,10 @@ export default function App() {
   if (!plugins.length) return <div>Loading plugins...</div>;
 
   return (
-    <AuthGate>
-      <AuthProvider>
+    <AuthProvider>
+      <AuthGate>
         <AliceApp config={{ ...config, openAIApiKey }} plugins={plugins} />
-      </AuthProvider>
-    </AuthGate>
+      </AuthGate>
+    </AuthProvider>
   );
 }

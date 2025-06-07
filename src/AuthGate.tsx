@@ -8,15 +8,15 @@ interface AuthGateProps {
 
 export default function AuthGate({ children }: AuthGateProps) {
   const { user: clerkUser } = useUser();
-  const { signIn } = useAuth();
+  const { signIn, user } = useAuth();
 
   useEffect(() => {
-    if (clerkUser?.primaryEmailAddress?.emailAddress) {
+    if (clerkUser?.primaryEmailAddress?.emailAddress && !user) {
       signIn(clerkUser.primaryEmailAddress.emailAddress).catch(error => {
         console.error('Failed to fetch user info from RestrictedChat:', error);
       });
     }
-  }, [clerkUser, signIn]);
+  }, [clerkUser, signIn, user]);
 
   return (
     <>
