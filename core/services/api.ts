@@ -16,6 +16,36 @@ export interface Channel {
   CreatedAt: string;
 }
 
+export interface ChatMessage {
+  MessageId: number;
+  ChannelId: number;
+  UserId: number;
+  Text: string;
+  Timestamp: string;
+  ReplyToMessageId: number | null;
+  user: {
+    UserId: number;
+    DisplayName: string;
+    Email: string;
+  };
+}
+
+export interface PostMessageResponse {
+  message_id: number;
+  status: string;
+}
+
+export interface WebSocketMessage {
+  type: 'message' | 'messages_updated' | 'user_joined' | 'user_left' | 'error';
+  text?: string;
+  user_id?: number;
+  reply_to_message_id?: number | null;
+  messages?: ChatMessage[];
+  latest_message_id?: number;
+  message?: string;
+  active_users?: number;
+}
+
 export async function getUserByEmail(email: string): Promise<UserInfo> {
   try {
     const response = await fetch(`${RESTRICTED_CHAT_API}/users/by-email/${encodeURIComponent(email)}`);
@@ -43,4 +73,101 @@ export async function getTeamChannels(teamId: number): Promise<Channel[]> {
     console.error('Error fetching team channels:', error);
     throw error;
   }
+}
+
+export async function getChannelMessages(
+  teamId: number,
+  channelId: number,
+  limit: number = 50,
+  offset: number = 0
+): Promise<ChatMessage[]> {
+  try {
+    const response = await fetch(
+      `${RESTRICTED_CHAT_API}/teams/${teamId}/channels/${channelId}/messages?limit=${limit}&offset=${offset}`
+    );
+    if (!response.ok) {
+      if (response.status === 404) {
+        return [];
+      }
+      throw new Error(`Failed to fetch messages: ${response.statusText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching channel messages:', error);
+    throw error;
+  }
+}
+
+export async function postMessage(
+  teamId: number,
+  channelId: number,
+  userId: number,
+  text: string,
+  replyToMessageId: number | null = null
+): Promise<PostMessageResponse> {
+  try {
+    const response = await fetch(
+      `${RESTRICTED_CHAT_API}/teams/${teamId}/channels/${channelId}/messages?user_id=${userId}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text,
+          reply_to_message_id: replyToMessageId,
+        }),
+      }
+    );
+    if (!response.ok) {
+      throw new Error(`Failed to post message: ${response.statusText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error posting message:', error);
+    throw error;
+  }
+}
+
+export function createWebSocketConnection(
+  teamId: number,
+  channelId: number,
+  onMessage: (data: WebSocketMessage) => void,
+  onError: (error: Event) => void,
+  onClose: (event: CloseEvent) => void
+): WebSocket {
+  const baseUrl = 'wss://restrictedchat.purplemeadow-b77df452.eastus.azurecontainerapps.io';
+  const wsUrl = `${baseUrl}/teams/${teamId}/channels/${channelId}/ws`;
+  console.log('Connecting to WebSocket:', wsUrl);
+  
+  const ws = new WebSocket(wsUrl);
+
+  ws.onopen = () => {
+    console.log('WebSocket connection established');
+    const userId = localStorage.getItem('userId') || '1';
+    console.log('Sending user ID:', userId);
+    ws.send(JSON.stringify({ user_id: userId }));
+  };
+
+  ws.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data) as WebSocketMessage;
+      console.log('Received WebSocket message:', data);
+      onMessage(data);
+    } catch (error) {
+      console.error('Error parsing WebSocket message:', error);
+    }
+  };
+
+  ws.onerror = (error) => {
+    console.error('WebSocket connection error:', error);
+    onError(error);
+  };
+
+  ws.onclose = (event) => {
+    console.log('WebSocket closed with code:', event.code, 'reason:', event.reason);
+    onClose(event);
+  };
+
+  return ws;
 } 
