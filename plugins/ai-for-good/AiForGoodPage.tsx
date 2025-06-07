@@ -1,29 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useUser } from '@clerk/clerk-react';
-
-const channels = [
-  { id: 'general', name: 'General' },
-  { id: 'random', name: 'Random' },
-  { id: 'announcements', name: 'Announcements' },
-  { id: 'course', name: 'Course' },
-];
-
-const initialMessages = {
-  general: [
-    { id: 1, user: 'Alice', text: 'Welcome to the General channel!', time: '09:00' },
-    { id: 2, user: 'Bob', text: 'Hi everyone!', time: '09:01' },
-    { id: 3, user: 'Carol', text: 'Good morning!', time: '09:02' },
-  ],
-  random: [
-    { id: 1, user: 'Dave', text: 'Random thoughts go here.', time: '09:10' },
-  ],
-  announcements: [
-    { id: 1, user: 'Admin', text: 'Project kickoff at 10am!', time: '08:55' },
-  ],
-  course: [
-    { id: 1, user: 'Alice', text: 'Welcome to the Course channel! Mention @alice to ask me a question.', time: '09:00' },
-  ],
-};
+import { getTeamChannels, type Channel } from '../../core/services/api';
 
 const wsUrl = 'wss://restrictedchat.purplemeadow-b77df452.eastus.azurecontainerapps.io/alice/aiforgood/chat';
 
@@ -33,55 +10,82 @@ const getYouTubeId = (url: string) => {
   return match ? match[1] : null;
 };
 
-const AI_COLOR = 'bg-blue-200 text-blue-800';
-const USER_COLOR = 'bg-purple-200 text-purple-700';
-const OTHER_COLORS = [
-  'bg-green-200 text-green-800',
-  'bg-yellow-200 text-yellow-800',
-  'bg-pink-200 text-pink-800',
-  'bg-orange-200 text-orange-800',
-  'bg-cyan-200 text-cyan-800',
-  'bg-red-200 text-red-800',
-  'bg-indigo-200 text-indigo-800',
-  'bg-teal-200 text-teal-800',
-];
-
-function getOtherUserColor(name, taken) {
-  // Deterministically assign a color based on name, skipping taken colors
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  let idx = Math.abs(hash) % OTHER_COLORS.length;
-  let tries = 0;
-  while (taken.has(idx) && tries < OTHER_COLORS.length) {
-    idx = (idx + 1) % OTHER_COLORS.length;
-    tries++;
+const getOtherUserColor = (user: string, taken: Set<string>) => {
+  const colors = [
+    '#E53E3E', // red-600
+    '#DD6B20', // orange-600
+    '#D69E2E', // yellow-600
+    '#38A169', // green-600
+    '#319795', // teal-600
+    '#3182CE', // blue-600
+    '#5A67D8', // indigo-600
+    '#805AD5', // purple-600
+    '#D53F8C', // pink-600
+  ];
+  
+  for (const color of colors) {
+    if (!taken.has(color)) {
+      taken.add(color);
+      return color;
+    }
   }
-  taken.add(idx);
-  return OTHER_COLORS[idx];
-}
+  
+  // If all colors are taken, generate a random one
+  const randomColor = '#' + Math.floor(Math.random()*16777215).toString(16);
+  taken.add(randomColor);
+  return randomColor;
+};
+
+const AI_COLOR = '#6D28D9'; // purple-700
+const USER_COLOR = '#2563EB'; // blue-600
+
+const initialMessages = {
+  general: [
+    { id: 1, user: 'Alice', text: 'Welcome to the General channel!', time: '09:00' },
+  ],
+};
 
 const AiForGoodPage: React.FC = () => {
   const { user } = useUser();
   const currentUserName = user?.firstName || user?.username || 'You';
-  const [selectedChannel, setSelectedChannel] = useState('general');
-  const [messages, setMessages] = useState(initialMessages);
+  const [channels, setChannels] = useState<Channel[]>([]);
+  const [selectedChannel, setSelectedChannel] = useState<string>('');
+  const [messages, setMessages] = useState<Record<string, any[]>>(initialMessages);
   const [input, setInput] = useState('');
   const wsRef = useRef<WebSocket | null>(null);
   const [waitingForAlice, setWaitingForAlice] = useState(false);
   const [playedVideos, setPlayedVideos] = useState<number[]>([]);
 
+  // Fetch channels when component mounts
+  useEffect(() => {
+    const fetchChannels = async () => {
+      try {
+        const teamChannels = await getTeamChannels(1); // Using team ID 1 for now
+        setChannels(teamChannels);
+        if (teamChannels.length > 0) {
+          // Set the first channel as selected
+          const defaultChannel = teamChannels.find(c => c.IsDefault) || teamChannels[0];
+          setSelectedChannel(defaultChannel.Name);
+        }
+      } catch (error) {
+        console.error('Error fetching channels:', error);
+      }
+    };
+    fetchChannels();
+  }, []);
+
   // Build a map of user -> color for this channel
   const userColorMap = (() => {
-    const taken = new Set();
-    const map = {};
-    messages[selectedChannel].forEach(msg => {
+    const taken = new Set<string>();
+    const map: Record<string, string> = {};
+    messages[selectedChannel]?.forEach(msg => {
       if (msg.user === 'Alice') {
         map[msg.user] = AI_COLOR;
       } else if (msg.user === 'You' || msg.user === currentUserName) {
         map[msg.user] = USER_COLOR;
       }
     });
-    messages[selectedChannel].forEach(msg => {
+    messages[selectedChannel]?.forEach(msg => {
       if (!map[msg.user]) {
         map[msg.user] = getOtherUserColor(msg.user, taken);
       }
@@ -100,7 +104,7 @@ const AiForGoodPage: React.FC = () => {
     };
     setMessages(prev => ({
       ...prev,
-      [selectedChannel]: [...prev[selectedChannel], newMsg],
+      [selectedChannel]: [...(prev[selectedChannel] || []), newMsg],
     }));
 
     // If in #Course and message contains @alice, send to websocket
@@ -118,7 +122,7 @@ const AiForGoodPage: React.FC = () => {
             setMessages(prev => ({
               ...prev,
               [selectedChannel]: [
-                ...prev[selectedChannel],
+                ...(prev[selectedChannel] || []),
                 {
                   id: Date.now() + 1,
                   user: 'Alice',
@@ -132,7 +136,7 @@ const AiForGoodPage: React.FC = () => {
             setMessages(prev => ({
               ...prev,
               [selectedChannel]: [
-                ...prev[selectedChannel],
+                ...(prev[selectedChannel] || []),
                 {
                   id: Date.now() + 1,
                   user: 'Alice',
@@ -150,7 +154,7 @@ const AiForGoodPage: React.FC = () => {
         setMessages(prev => ({
           ...prev,
           [selectedChannel]: [
-            ...prev[selectedChannel],
+            ...(prev[selectedChannel] || []),
             {
               id: Date.now() + 2,
               user: 'System',
@@ -166,6 +170,10 @@ const AiForGoodPage: React.FC = () => {
     setInput('');
   };
 
+  if (channels.length === 0) {
+    return <div className="p-4 text-center">Loading channels...</div>;
+  }
+
   return (
     <div className="flex h-full bg-gray-50" style={{ minHeight: '500px' }}>
       {/* Channels sidebar */}
@@ -173,76 +181,64 @@ const AiForGoodPage: React.FC = () => {
         <div className="p-4 font-bold text-lg border-b border-gray-100">Channels</div>
         <ul className="flex-1 overflow-auto">
           {channels.map(channel => (
-            <li key={channel.id}>
+            <li key={channel.ChannelId}>
               <button
-                className={`w-full text-left px-4 py-2 hover:bg-purple-50 ${selectedChannel === channel.id ? 'bg-purple-100 font-semibold' : ''}`}
-                onClick={() => setSelectedChannel(channel.id)}
+                className={`w-full text-left px-4 py-2 hover:bg-purple-50 ${selectedChannel === channel.Name ? 'bg-purple-100 font-semibold' : ''}`}
+                onClick={() => setSelectedChannel(channel.Name)}
               >
-                # {channel.name}
+                # {channel.Name}
               </button>
             </li>
           ))}
         </ul>
       </div>
       {/* Chat area */}
-      <div className="flex flex-col flex-1 h-full">
-        <div className="px-6 py-4 border-b border-gray-200 bg-white flex items-center">
-          <span className="font-bold text-xl"># {channels.find(c => c.id === selectedChannel)?.name}</span>
-        </div>
-        <div className="flex-1 overflow-auto px-6 py-4 space-y-4 bg-gray-50" style={{ minHeight: 0 }}>
-          {messages[selectedChannel].map(msg => (
-            <div key={msg.id} className="flex items-start space-x-3">
-              <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-base ${userColorMap[msg.user]}`}
-                title={msg.user}
-              >
-                {msg.user[0]}
-              </div>
-              <div>
-                <div className="flex items-center space-x-2">
-                  <span className="font-semibold">{msg.user}</span>
-                  <span className="text-xs text-gray-400">{msg.time}</span>
+      <div className="flex-1 flex flex-col">
+        <div className="flex-1 p-4 overflow-y-auto">
+          {messages[selectedChannel]?.map(msg => (
+            <div key={msg.id} className="mb-4">
+              <div className="flex items-start">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mr-3">
+                  <span className="text-sm font-medium" style={{ color: userColorMap[msg.user] }}>
+                    {msg.user[0].toUpperCase()}
+                  </span>
                 </div>
-                <div className="text-gray-800">{msg.text}</div>
-                {msg.video_url && (() => {
-                  const ytId = getYouTubeId(msg.video_url);
-                  if (!ytId) return null;
-                  const isPlayed = playedVideos.includes(msg.id);
-                  const thumbUrl = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
-                  const embedUrl = `https://www.youtube.com/embed/${ytId}?autoplay=1&vq=hd1080&rel=0`;
-                  return (
-                    <div className="mt-2">
-                      {!isPlayed ? (
-                        <div
-                          className="relative w-80 h-44 cursor-pointer group bg-black/10 rounded-lg overflow-hidden"
-                          style={{ maxWidth: 320, maxHeight: 180 }}
-                          onClick={() => setPlayedVideos(p => [...p, msg.id])}
-                        >
-                          <img
-                            src={thumbUrl}
-                            alt="YouTube thumbnail"
-                            className="w-full h-full object-cover"
+                <div className="flex-1">
+                  <div className="flex items-center mb-1">
+                    <span className="font-medium mr-2" style={{ color: userColorMap[msg.user] }}>
+                      {msg.user}
+                    </span>
+                    <span className="text-xs text-gray-500">{msg.time}</span>
+                  </div>
+                  <p className="text-gray-800">{msg.text}</p>
+                  {msg.video_url && (() => {
+                    const videoId = getYouTubeId(msg.video_url);
+                    if (!videoId) return null;
+                    const embedUrl = `https://www.youtube.com/embed/${videoId}`;
+                    return (
+                      <div className="mt-2">
+                        {playedVideos.includes(msg.id) ? (
+                          <iframe
+                            width="320"
+                            height="180"
+                            src={embedUrl}
+                            title="YouTube video"
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
                           />
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/40 group-hover:bg-black/60 transition">
-                            <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-                              <circle cx="32" cy="32" r="32" fill="rgba(0,0,0,0.5)" />
-                              <polygon points="26,20 48,32 26,44" fill="#fff" />
-                            </svg>
-                          </div>
-                        </div>
-                      ) : (
-                        <iframe
-                          width="320"
-                          height="180"
-                          src={embedUrl}
-                          title="YouTube video"
-                          frameBorder="0"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        />
-                      )}
-                    </div>
-                  );
-                })()}
+                        ) : (
+                          <button
+                            onClick={() => setPlayedVideos(prev => [...prev, msg.id])}
+                            className="text-purple-600 hover:text-purple-700"
+                          >
+                            Click to play video
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
               </div>
             </div>
           ))}
@@ -254,7 +250,7 @@ const AiForGoodPage: React.FC = () => {
           <input
             className="flex-1 border border-gray-300 rounded-md px-3 py-2 mr-2 focus:outline-none focus:ring-2 focus:ring-purple-400"
             type="text"
-            placeholder={`Message #${channels.find(c => c.id === selectedChannel)?.name}`}
+            placeholder={`Message #${selectedChannel}`}
             value={input}
             onChange={e => setInput(e.target.value)}
           />
