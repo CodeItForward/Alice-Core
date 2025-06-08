@@ -28,6 +28,8 @@ export interface ChatMessage {
     DisplayName: string;
     Email: string;
   };
+  type?: string;
+  video_url?: string;
 }
 
 export interface PostMessageResponse {
@@ -36,7 +38,7 @@ export interface PostMessageResponse {
 }
 
 export interface WebSocketMessage {
-  type: 'message' | 'text' | 'join' | 'messages_updated' | 'user_joined' | 'user_left' | 'error';
+  type: 'message' | 'text' | 'join' | 'messages_updated' | 'user_joined' | 'user_left' | 'error' | 'video';
   text?: string;
   content?: string;
   user_id?: number;
@@ -48,7 +50,7 @@ export interface WebSocketMessage {
   active_users?: number;
   active_user_ids?: number[];
   created_at?: string;
-  video_url?: string | null;
+  video_url?: string;
   display_name?: string;
 }
 

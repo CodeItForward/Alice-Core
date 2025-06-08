@@ -123,8 +123,10 @@ export function AiForGoodPage() {
         switch (data.type) {
           case 'message':
           case 'text':
+          case 'video':
+            console.log('Processing message of type:', data.type, 'with data:', data);
             if (data.message_id && data.content && data.user_id && data.created_at) {
-              console.log('Processing new message:', data);
+              console.log('Creating new message object from data');
               setMessages(prevMessages => {
                 const newMessage: ChatMessage = {
                   MessageId: data.message_id!,
@@ -137,9 +139,29 @@ export function AiForGoodPage() {
                     UserId: data.user_id!,
                     DisplayName: data.display_name || (data.user_id === 1 ? 'Alice' : 'User ' + data.user_id),
                     Email: ''
-                  }
+                  },
+                  type: data.type,
+                  video_url: data.video_url || undefined
                 };
-                return [...prevMessages, newMessage];
+                console.log('Created new message object:', newMessage);
+                // Check if the message already exists to avoid duplication
+                const messageExists = prevMessages.some(msg => msg.MessageId === newMessage.MessageId);
+                console.log('Current messages:', prevMessages);
+                console.log('Message exists:', messageExists);
+                if (!messageExists) {
+                  const updatedMessages = [...prevMessages, newMessage];
+                  console.log('Updated messages array:', updatedMessages);
+                  return updatedMessages;
+                }
+                console.log('Message already exists, not adding:', newMessage);
+                return prevMessages;
+              });
+            } else {
+              console.log('Message data missing required fields:', {
+                hasMessageId: !!data.message_id,
+                hasContent: !!data.content,
+                hasUserId: !!data.user_id,
+                hasCreatedAt: !!data.created_at
               });
             }
             break;
@@ -154,7 +176,7 @@ export function AiForGoodPage() {
               console.log('Updating messages with:', data.messages.length, 'messages');
               setMessages(prevMessages => {
                 const existingMessages = new Map(prevMessages.map(msg => [msg.MessageId, msg]));
-                data.messages.forEach(msg => {
+                data.messages!.forEach(msg => {
                   existingMessages.set(msg.MessageId, msg);
                 });
                 return Array.from(existingMessages.values())
@@ -225,6 +247,7 @@ export function AiForGoodPage() {
 
   // Scroll to bottom when messages change
   useEffect(() => {
+    console.log('Messages state updated:', messages);
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
@@ -351,7 +374,20 @@ export function AiForGoodPage() {
                             ? 'bg-purple-600 text-white rounded-tr-none'
                             : 'border border-gray-200 shadow-sm rounded-tl-none'
                         }`} style={{ backgroundColor: isAlice ? undefined : isCurrentUser ? undefined : userColor }}>
-                          <div className="text-sm">{message.Text}</div>
+                          <div className="text-sm">
+                            {message.type === 'video' && message.video_url ? (
+                              <iframe
+                                width="560"
+                                height="315"
+                                src={message.video_url}
+                                frameBorder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                              ></iframe>
+                            ) : (
+                              message.Text
+                            )}
+                          </div>
                         </div>
                         <div className="mt-1 text-xs text-gray-500 text-left"> 
                           {isAlice ? 'Alice' : isCurrentUser ? 'You' : message.user.DisplayName} · {new Date(message.Timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
