@@ -67,6 +67,13 @@ export function AiForGoodPage() {
   const reconnectAttemptsRef = useRef(0);
   const MAX_RECONNECT_ATTEMPTS = 5;
   const wsSetupRef = useRef(false);
+  const processedMessageIds = useRef<Set<number>>(new Set());
+
+  // Wrapper to log every setMessages call
+  const setMessagesWithLog = (...args: Parameters<typeof setMessages>) => {
+    console.log('setMessages called from', new Error().stack);
+    return setMessages(...args);
+  };
 
   // Cleanup function for WebSocket
   const cleanupWebSocket = () => {
@@ -119,7 +126,7 @@ export function AiForGoodPage() {
     const loadMessages = async () => {
       try {
         const fetchedMessages = await getChannelMessages(1, selectedChannel.ChannelId);
-        setMessages(fetchedMessages);
+        setMessagesWithLog(fetchedMessages);
       } catch (err) {
         setError('Failed to load messages');
         console.error('Error loading messages:', err);
@@ -145,6 +152,17 @@ export function AiForGoodPage() {
         1,
         selectedChannel.ChannelId,
         (data: WebSocketMessage) => {
+          // Log all incoming WebSocket messages
+          console.log('WebSocket received message:', data);
+          // Defensive: skip duplicate messages by message_id
+          if (data.message_id && processedMessageIds.current.has(data.message_id)) {
+            console.log('Skipping duplicate message_id:', data.message_id, 'Current set:', Array.from(processedMessageIds.current));
+            return;
+          }
+          if (data.message_id) {
+            processedMessageIds.current.add(data.message_id);
+            console.log('Added message_id:', data.message_id, 'Current set:', Array.from(processedMessageIds.current));
+          }
           // Clear any existing errors when we receive a message
           setError(null);
           console.log('Received WebSocket message in AiForGoodPage:', {
@@ -163,21 +181,28 @@ export function AiForGoodPage() {
               console.log('Processing message of type:', data.type, 'with data:', data);
               if (data.message_id && data.content && data.user_id && data.created_at) {
                 console.log('Creating new message object from data');
-                setMessages(prevMessages => {
-                  // First check if this message already exists in the state
+                setMessagesWithLog(prevMessages => {
+                  console.log('setMessages updater called for message_id:', data.message_id, 'prevMessages length:', prevMessages.length, 'at', new Date().toISOString());
+                  console.log('setMessages stack trace for message_id:', data.message_id, new Error().stack);
+
+                  // Strict check: if the message already exists, do NOT add it again
+                  if (prevMessages.some(msg => msg.MessageId === data.message_id)) {
+                    console.log('Message already exists in prevMessages, skipping add:', data.message_id);
+                    return prevMessages;
+                  }
+
+                  // First check if this message already exists in the state (temp_id logic)
                   const existingMessage = prevMessages.find(msg => 
-                    msg.MessageId === data.message_id || 
                     (data.temp_id && msg.MessageId === data.temp_id)
                   );
 
                   if (existingMessage) {
-                    console.log('Message already exists in state:', {
+                    console.log('Message already exists in state (temp_id):', {
                       messageId: data.message_id,
                       tempId: data.temp_id,
                       existingMessageType: existingMessage.type,
                       existingMessageId: existingMessage.MessageId
                     });
-                    
                     // If we have a temp message and received the permanent one, update the ID
                     if (data.temp_id && existingMessage.MessageId === data.temp_id && data.message_id) {
                       console.log('Updating temporary message with permanent ID:', data.message_id);
@@ -187,7 +212,6 @@ export function AiForGoodPage() {
                           : msg
                       );
                     }
-                    
                     return prevMessages;
                   }
 
@@ -205,7 +229,8 @@ export function AiForGoodPage() {
                       DisplayName: data.display_name || (data.user_id === 1 ? 'Alice' : 'User ' + data.user_id),
                       Email: ''
                     },
-                    type: 'text'
+                    type: data.type === 'video' ? 'video' : 'text',
+                    video_url: data.video_url || undefined
                   };
 
                   // Remove any temporary message with the same content
@@ -216,7 +241,12 @@ export function AiForGoodPage() {
                        Math.abs(new Date(msg.Timestamp).getTime() - new Date(data.created_at!).getTime()) < 1000))
                   );
 
-                  return [...filteredMessages, newMessage];
+                  // Deduplicate by MessageId
+                  const deduped = new Map<number, ChatMessage>();
+                  [...filteredMessages, newMessage].forEach(msg => {
+                    deduped.set(msg.MessageId, msg);
+                  });
+                  return Array.from(deduped.values());
                 });
               } else {
                 console.log('Message data missing required fields:', {
@@ -239,7 +269,7 @@ export function AiForGoodPage() {
             case 'messages_updated':
               if (data.messages) {
                 console.log('Messages updated:', data.messages.length);
-                setMessages(data.messages);
+                setMessagesWithLog(data.messages);
               }
               break;
             case 'error':
@@ -297,55 +327,34 @@ export function AiForGoodPage() {
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedChannel || !user) return;
-
+    const tempMessage = {
+      MessageId: Date.now(),
+      ChannelId: selectedChannel.ChannelId,
+      UserId: user.id,
+      Text: newMessage,
+      Timestamp: new Date().toISOString(),
+      ReplyToMessageId: null,
+      user: {
+        UserId: user.id,
+        DisplayName: user.displayName || user.email,
+        Email: user.email
+      },
+      type: 'text'
+    };
+    setNewMessage('');
     try {
-      // Create a temporary message object with a unique ID
-      const tempId = Date.now();
-      const tempMessage: ChatMessage = {
-        MessageId: tempId,
-        ChannelId: selectedChannel.ChannelId,
-        UserId: parseInt(user.id),
-        Text: newMessage,
-        Timestamp: new Date().toISOString(),
-        ReplyToMessageId: null,
-        user: {
-          UserId: parseInt(user.id),
-          DisplayName: user.displayName || user.email,
-          Email: user.email
-        }
-      };
-
-      // Update local messages immediately
-      setMessages(prev => {
-        // Check if we already have a temporary message for this user
-        const hasTempMessage = prev.some(msg => 
-          msg.UserId === parseInt(user.id) && 
-          msg.MessageId > Date.now() - 5000 // Only consider messages from last 5 seconds
-        );
-        if (hasTempMessage) {
-          console.log('Found existing temporary message, not adding new one');
-          return prev;
-        }
-        return [...prev, tempMessage];
-      });
-
-      // Send message through WebSocket
       if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
         const message = {
           type: 'message',
           text: newMessage,
-          user_id: parseInt(user.id),
+          user_id: user.id,
           reply_to_message_id: null,
-          temp_id: tempId // Include the temporary ID in the message
+          temp_id: tempMessage.MessageId
         };
-        console.log('Sending chat message:', JSON.stringify(message, null, 2));
         wsRef.current.send(JSON.stringify(message));
-        setNewMessage('');
+        console.log('Sending chat message:', message);
       } else {
-        console.error('WebSocket not ready:', wsRef.current?.readyState);
         setError('WebSocket connection is not available');
-        // Remove the temporary message if WebSocket is not available
-        setMessages(prev => prev.filter(m => m.MessageId !== tempMessage.MessageId));
       }
     } catch (err) {
       setError('Failed to send message');
@@ -433,17 +442,20 @@ export function AiForGoodPage() {
                             : 'border border-gray-200 shadow-sm rounded-tl-none'
                         }`} style={{ backgroundColor: isAlice ? undefined : isCurrentUser ? undefined : userColor }}>
                           <div className="text-sm">
-                            {message.type === 'video' && message.video_url ? (
-                              <iframe
-                                width="560"
-                                height="315"
-                                src={`https://www.youtube.com/embed/${getYouTubeId(message.video_url)}`}
-                                frameBorder="0"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowFullScreen
-                              ></iframe>
-                            ) : (
-                              message.Text
+                            {/* Always show the message text */}
+                            <div>{message.Text}</div>
+                            {/* If video, show embed below text */}
+                            {message.type === 'video' && message.video_url && (
+                              <div className="mt-2">
+                                <iframe
+                                  width="560"
+                                  height="315"
+                                  src={`https://www.youtube.com/embed/${getYouTubeId(message.video_url)}`}
+                                  frameBorder="0"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                  allowFullScreen
+                                ></iframe>
+                              </div>
                             )}
                           </div>
                         </div>
