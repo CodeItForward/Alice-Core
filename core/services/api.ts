@@ -36,14 +36,20 @@ export interface PostMessageResponse {
 }
 
 export interface WebSocketMessage {
-  type: 'message' | 'messages_updated' | 'user_joined' | 'user_left' | 'error';
+  type: 'message' | 'text' | 'join' | 'messages_updated' | 'user_joined' | 'user_left' | 'error';
   text?: string;
+  content?: string;
   user_id?: number;
+  message_id?: number;
   reply_to_message_id?: number | null;
   messages?: ChatMessage[];
   latest_message_id?: number;
   message?: string;
   active_users?: number;
+  active_user_ids?: number[];
+  created_at?: string;
+  video_url?: string | null;
+  display_name?: string;
 }
 
 export async function getUserByEmail(email: string): Promise<UserInfo> {

@@ -108,21 +108,60 @@ export function AiForGoodPage() {
       (data: WebSocketMessage) => {
         // Clear any existing errors when we receive a message
         setError(null);
+        console.log('Received WebSocket message in AiForGoodPage:', {
+          type: data.type,
+          hasMessages: !!data.messages,
+          messageCount: data.messages?.length,
+          activeUsers: data.active_users
+        });
         switch (data.type) {
-          case 'messages_updated':
-            if (data.messages) {
-              setMessages(data.messages);
+          case 'message':
+          case 'text':
+            if (data.message_id && data.content && data.user_id && data.created_at) {
+              console.log('Processing new message:', data);
+              setMessages(prevMessages => {
+                const newMessage: ChatMessage = {
+                  MessageId: data.message_id!,
+                  ChannelId: selectedChannel.ChannelId,
+                  UserId: data.user_id!,
+                  Text: data.content!,
+                  Timestamp: data.created_at!,
+                  ReplyToMessageId: null,
+                  user: {
+                    UserId: data.user_id!,
+                    DisplayName: data.display_name || (data.user_id === 1 ? 'Alice' : 'User ' + data.user_id),
+                    Email: ''
+                  }
+                };
+                return [...prevMessages, newMessage];
+              });
             }
             break;
-          case 'user_joined':
-          case 'user_left':
+          case 'join':
             if (data.active_users !== undefined) {
+              console.log('Updating active users count:', data.active_users);
               setActiveUsers(data.active_users);
             }
             break;
+          case 'messages_updated':
+            if (data.messages && Array.isArray(data.messages)) {
+              console.log('Updating messages with:', data.messages.length, 'messages');
+              setMessages(prevMessages => {
+                const existingMessages = new Map(prevMessages.map(msg => [msg.MessageId, msg]));
+                data.messages.forEach(msg => {
+                  existingMessages.set(msg.MessageId, msg);
+                });
+                return Array.from(existingMessages.values())
+                  .sort((a, b) => new Date(a.Timestamp).getTime() - new Date(b.Timestamp).getTime());
+              });
+            }
+            break;
           case 'error':
+            console.error('WebSocket error message:', data.message);
             setError(data.message || 'An error occurred');
             break;
+          default:
+            console.log('Unhandled message type:', data.type);
         }
       },
       (error) => {
