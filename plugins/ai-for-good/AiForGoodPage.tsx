@@ -188,8 +188,40 @@ export function AiForGoodPage() {
     if (!newMessage.trim() || !selectedChannel || !user) return;
 
     try {
-      await postMessage(1, selectedChannel.ChannelId, parseInt(user.id), newMessage);
-      setNewMessage('');
+      // Create a temporary message object
+      const tempMessage: ChatMessage = {
+        MessageId: Date.now(), // Temporary ID
+        ChannelId: selectedChannel.ChannelId,
+        UserId: parseInt(user.id),
+        Text: newMessage,
+        Timestamp: new Date().toISOString(),
+        ReplyToMessageId: null,
+        user: {
+          UserId: parseInt(user.id),
+          DisplayName: user.displayName || user.email,
+          Email: user.email
+        }
+      };
+
+      // Update local messages immediately
+      setMessages(prev => [...prev, tempMessage]);
+
+      // Send message through WebSocket
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        const message = {
+          type: 'message',
+          text: newMessage,
+          user_id: parseInt(user.id),
+          reply_to_message_id: null
+        };
+        console.log('Sending chat message:', JSON.stringify(message, null, 2));
+        wsRef.current.send(JSON.stringify(message));
+        setNewMessage('');
+      } else {
+        setError('WebSocket connection is not available');
+        // Remove the temporary message if WebSocket is not available
+        setMessages(prev => prev.filter(m => m.MessageId !== tempMessage.MessageId));
+      }
     } catch (err) {
       setError('Failed to send message');
       console.error('Error sending message:', err);

@@ -142,17 +142,24 @@ export function createWebSocketConnection(
   
   const ws = new WebSocket(wsUrl);
 
+  // Wait for connection to be fully established
   ws.onopen = () => {
     console.log('WebSocket connection established');
-    const userId = localStorage.getItem('userId') || '1';
-    console.log('Sending user ID:', userId);
-    ws.send(JSON.stringify({ user_id: userId }));
+    // Small delay to ensure connection is ready
+    setTimeout(() => {
+      if (ws.readyState === WebSocket.OPEN) {
+        const userId = parseInt(localStorage.getItem('userId') || '1', 10);
+        const message = { user_id: userId };
+        console.log('Sending WebSocket message:', JSON.stringify(message, null, 2));
+        ws.send(JSON.stringify(message));
+      }
+    }, 100);
   };
 
   ws.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data) as WebSocketMessage;
-      console.log('Received WebSocket message:', data);
+      console.log('Received WebSocket message:', JSON.stringify(data, null, 2));
       onMessage(data);
     } catch (error) {
       console.error('Error parsing WebSocket message:', error);
