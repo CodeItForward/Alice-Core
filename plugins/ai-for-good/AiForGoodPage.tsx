@@ -62,6 +62,27 @@ export function AiForGoodPage() {
   const [activeUsers, setActiveUsers] = useState(0);
   const wsRef = useRef<WebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isConnectingRef = useRef(false);
+  const reconnectTimeoutRef = useRef<number>();
+  const reconnectAttemptsRef = useRef(0);
+  const MAX_RECONNECT_ATTEMPTS = 5;
+  const wsSetupRef = useRef(false);
+
+  // Cleanup function for WebSocket
+  const cleanupWebSocket = () => {
+    if (wsRef.current) {
+      wsRef.current.onclose = null; // Remove the onclose handler to prevent reconnection
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = undefined;
+    }
+    isConnectingRef.current = false;
+    reconnectAttemptsRef.current = 0;
+    wsSetupRef.current = false;
+  };
 
   // Fetch channels on component mount
   useEffect(() => {
@@ -89,6 +110,12 @@ export function AiForGoodPage() {
   useEffect(() => {
     if (!selectedChannel || !user) return;
 
+    if (wsSetupRef.current) {
+      console.log('WebSocket setup already in progress, skipping...');
+      return;
+    }
+    wsSetupRef.current = true;
+
     const loadMessages = async () => {
       try {
         const fetchedMessages = await getChannelMessages(1, selectedChannel.ChannelId);
@@ -99,149 +126,166 @@ export function AiForGoodPage() {
       }
     };
 
-    // Close existing WebSocket connection
-    if (wsRef.current) {
-      wsRef.current.close();
-    }
+    // Cleanup existing connection
+    cleanupWebSocket();
 
     // Store user ID in localStorage for WebSocket connection
     localStorage.setItem('userId', user.id);
 
+    // Add log for WebSocket creation
+    console.log('WebSocket CREATED for channel', selectedChannel.ChannelId, 'user', user.id, 'at', new Date().toISOString());
+
+    // Add log for handler attachment
+    console.log('Attaching WebSocket message handler for channel', selectedChannel.ChannelId, 'user', user.id, 'at', new Date().toISOString());
+
     // Create new WebSocket connection
-    wsRef.current = createWebSocketConnection(
-      1,
-      selectedChannel.ChannelId,
-      (data: WebSocketMessage) => {
-        // Clear any existing errors when we receive a message
-        setError(null);
-        console.log('Received WebSocket message in AiForGoodPage:', {
-          type: data.type,
-          hasMessages: !!data.messages,
-          messageCount: data.messages?.length,
-          activeUsers: data.active_users
-        });
-        switch (data.type) {
-          case 'message':
-          case 'text':
-          case 'video':
-            console.log('Processing message of type:', data.type, 'with data:', data);
-            if (data.message_id && data.content && data.user_id && data.created_at) {
-              console.log('Creating new message object from data');
-              setMessages(prevMessages => {
-                const newMessage: ChatMessage = {
-                  MessageId: data.message_id!,
-                  ChannelId: selectedChannel.ChannelId,
-                  UserId: data.user_id!,
-                  Text: data.content!,
-                  Timestamp: data.created_at!,
-                  ReplyToMessageId: null,
-                  user: {
+    if (!isConnectingRef.current) {
+      isConnectingRef.current = true;
+      const ws = createWebSocketConnection(
+        1,
+        selectedChannel.ChannelId,
+        (data: WebSocketMessage) => {
+          // Clear any existing errors when we receive a message
+          setError(null);
+          console.log('Received WebSocket message in AiForGoodPage:', {
+            type: data.type,
+            hasMessages: !!data.messages,
+            messageCount: data.messages?.length,
+            activeUsers: data.active_users,
+            messageId: data.message_id,
+            tempId: data.temp_id
+          });
+
+          switch (data.type) {
+            case 'message':
+            case 'text':
+            case 'video':
+              console.log('Processing message of type:', data.type, 'with data:', data);
+              if (data.message_id && data.content && data.user_id && data.created_at) {
+                console.log('Creating new message object from data');
+                setMessages(prevMessages => {
+                  // First check if this message already exists in the state
+                  const existingMessage = prevMessages.find(msg => 
+                    msg.MessageId === data.message_id || 
+                    (data.temp_id && msg.MessageId === data.temp_id)
+                  );
+
+                  if (existingMessage) {
+                    console.log('Message already exists in state:', {
+                      messageId: data.message_id,
+                      tempId: data.temp_id,
+                      existingMessageType: existingMessage.type,
+                      existingMessageId: existingMessage.MessageId
+                    });
+                    
+                    // If we have a temp message and received the permanent one, update the ID
+                    if (data.temp_id && existingMessage.MessageId === data.temp_id && data.message_id) {
+                      console.log('Updating temporary message with permanent ID:', data.message_id);
+                      return prevMessages.map(msg => 
+                        msg.MessageId === data.temp_id 
+                          ? { ...msg, MessageId: data.message_id! }
+                          : msg
+                      );
+                    }
+                    
+                    return prevMessages;
+                  }
+
+                  // This is a new message
+                  console.log('Adding new message:', data.message_id);
+                  const newMessage: ChatMessage = {
+                    MessageId: data.message_id!,
+                    ChannelId: selectedChannel.ChannelId,
                     UserId: data.user_id!,
-                    DisplayName: data.display_name || (data.user_id === 1 ? 'Alice' : 'User ' + data.user_id),
-                    Email: ''
-                  },
-                  type: data.type,
-                  video_url: data.video_url || undefined
-                };
-                console.log('Created new message object:', newMessage);
-                // Check if the message already exists to avoid duplication
-                const messageExists = prevMessages.some(msg => msg.MessageId === newMessage.MessageId);
-                console.log('Current messages:', prevMessages);
-                console.log('Message exists:', messageExists);
-                if (!messageExists) {
-                  const updatedMessages = [...prevMessages, newMessage];
-                  console.log('Updated messages array:', updatedMessages);
-                  return updatedMessages;
-                }
-                console.log('Message already exists, not adding:', newMessage);
-                return prevMessages;
-              });
-            } else {
-              console.log('Message data missing required fields:', {
-                hasMessageId: !!data.message_id,
-                hasContent: !!data.content,
-                hasUserId: !!data.user_id,
-                hasCreatedAt: !!data.created_at
-              });
-            }
-            break;
-          case 'join':
-            if (data.active_users !== undefined) {
-              console.log('Updating active users count:', data.active_users);
-              setActiveUsers(data.active_users);
-            }
-            break;
-          case 'messages_updated':
-            if (data.messages && Array.isArray(data.messages)) {
-              console.log('Updating messages with:', data.messages.length, 'messages');
-              setMessages(prevMessages => {
-                const existingMessages = new Map(prevMessages.map(msg => [msg.MessageId, msg]));
-                data.messages!.forEach(msg => {
-                  existingMessages.set(msg.MessageId, msg);
+                    Text: data.content!,
+                    Timestamp: data.created_at!,
+                    ReplyToMessageId: null,
+                    user: {
+                      UserId: data.user_id!,
+                      DisplayName: data.display_name || (data.user_id === 1 ? 'Alice' : 'User ' + data.user_id),
+                      Email: ''
+                    },
+                    type: 'text'
+                  };
+
+                  // Remove any temporary message with the same content
+                  const filteredMessages = prevMessages.filter(msg => 
+                    !(msg.MessageId === data.temp_id || 
+                      (msg.Text === data.content && 
+                       msg.UserId === data.user_id && 
+                       Math.abs(new Date(msg.Timestamp).getTime() - new Date(data.created_at!).getTime()) < 1000))
+                  );
+
+                  return [...filteredMessages, newMessage];
                 });
-                return Array.from(existingMessages.values())
-                  .sort((a, b) => new Date(a.Timestamp).getTime() - new Date(b.Timestamp).getTime());
-              });
-            }
-            break;
-          case 'error':
-            console.error('WebSocket error message:', data.message);
-            setError(data.message || 'An error occurred');
-            break;
-          default:
-            console.log('Unhandled message type:', data.type);
-        }
-      },
-      (error) => {
-        console.error('WebSocket error:', error);
-        // Don't set error state here, let the reconnection attempt happen
-      },
-      (event) => {
-        console.log('WebSocket closed:', event);
-        // Attempt to reconnect after a delay
-        setTimeout(() => {
-          if (selectedChannel && user) {
-            wsRef.current = createWebSocketConnection(
-              1,
-              selectedChannel.ChannelId,
-              (data) => {
-                // Clear any existing errors when we receive a message
-                setError(null);
-                switch (data.type) {
-                  case 'messages_updated':
-                    if (data.messages) {
-                      setMessages(data.messages);
-                    }
-                    break;
-                  case 'user_joined':
-                  case 'user_left':
-                    if (data.active_users !== undefined) {
-                      setActiveUsers(data.active_users);
-                    }
-                    break;
-                  case 'error':
-                    setError(data.message || 'An error occurred');
-                    break;
-                }
-              },
-              (error) => {
-                console.error('WebSocket error:', error);
-              },
-              (event) => {
-                console.log('WebSocket closed:', event);
+              } else {
+                console.log('Message data missing required fields:', {
+                  hasMessageId: !!data.message_id,
+                  hasContent: !!data.content,
+                  hasUserId: !!data.user_id,
+                  hasCreatedAt: !!data.created_at
+                });
               }
-            );
+              break;
+            case 'join':
+              console.log('User joined:', data.user_id);
+              break;
+            case 'user_joined':
+              console.log('User joined:', data.user_id);
+              break;
+            case 'user_left':
+              console.log('User left:', data.user_id);
+              break;
+            case 'messages_updated':
+              if (data.messages) {
+                console.log('Messages updated:', data.messages.length);
+                setMessages(data.messages);
+              }
+              break;
+            case 'error':
+              console.error('WebSocket error:', data.message);
+              setError(data.message || 'An error occurred');
+              break;
           }
-        }, 3000);
-      }
-    );
+        },
+        (error) => {
+          console.error('WebSocket error:', error);
+          setError('Connection error occurred');
+        },
+        (event) => {
+          console.log('WebSocket closed:', event.code, event.reason);
+          if (event.code === 1000) {
+            // Normal closure
+            return;
+          }
+          
+          // Attempt to reconnect if not at max attempts
+          if (reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
+            reconnectAttemptsRef.current++;
+            console.log(`Attempting to reconnect (${reconnectAttemptsRef.current}/${MAX_RECONNECT_ATTEMPTS})...`);
+            reconnectTimeoutRef.current = window.setTimeout(() => {
+              if (selectedChannel && user) {
+                isConnectingRef.current = false;
+                // Trigger the effect again
+                setSelectedChannel({ ...selectedChannel });
+              }
+            }, 1000 * Math.min(30, Math.pow(2, reconnectAttemptsRef.current)));
+          } else {
+            setError('Connection lost. Please refresh the page.');
+          }
+        }
+      );
+
+      wsRef.current = ws;
+      isConnectingRef.current = false;
+    }
 
     loadMessages();
 
+    // Cleanup on unmount or channel change
     return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
+      cleanupWebSocket();
+      wsSetupRef.current = false;
     };
   }, [selectedChannel, user]);
 
@@ -255,9 +299,10 @@ export function AiForGoodPage() {
     if (!newMessage.trim() || !selectedChannel || !user) return;
 
     try {
-      // Create a temporary message object
+      // Create a temporary message object with a unique ID
+      const tempId = Date.now();
       const tempMessage: ChatMessage = {
-        MessageId: Date.now(), // Temporary ID
+        MessageId: tempId,
         ChannelId: selectedChannel.ChannelId,
         UserId: parseInt(user.id),
         Text: newMessage,
@@ -271,7 +316,18 @@ export function AiForGoodPage() {
       };
 
       // Update local messages immediately
-      setMessages(prev => [...prev, tempMessage]);
+      setMessages(prev => {
+        // Check if we already have a temporary message for this user
+        const hasTempMessage = prev.some(msg => 
+          msg.UserId === parseInt(user.id) && 
+          msg.MessageId > Date.now() - 5000 // Only consider messages from last 5 seconds
+        );
+        if (hasTempMessage) {
+          console.log('Found existing temporary message, not adding new one');
+          return prev;
+        }
+        return [...prev, tempMessage];
+      });
 
       // Send message through WebSocket
       if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
@@ -279,12 +335,14 @@ export function AiForGoodPage() {
           type: 'message',
           text: newMessage,
           user_id: parseInt(user.id),
-          reply_to_message_id: null
+          reply_to_message_id: null,
+          temp_id: tempId // Include the temporary ID in the message
         };
         console.log('Sending chat message:', JSON.stringify(message, null, 2));
         wsRef.current.send(JSON.stringify(message));
         setNewMessage('');
       } else {
+        console.error('WebSocket not ready:', wsRef.current?.readyState);
         setError('WebSocket connection is not available');
         // Remove the temporary message if WebSocket is not available
         setMessages(prev => prev.filter(m => m.MessageId !== tempMessage.MessageId));
@@ -379,7 +437,7 @@ export function AiForGoodPage() {
                               <iframe
                                 width="560"
                                 height="315"
-                                src={message.video_url}
+                                src={`https://www.youtube.com/embed/${getYouTubeId(message.video_url)}`}
                                 frameBorder="0"
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                 allowFullScreen
