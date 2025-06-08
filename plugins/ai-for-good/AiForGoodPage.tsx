@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../core/context/AuthContext';
 import { getTeamChannels, getChannelMessages, postMessage, createWebSocketConnection, type Channel, type ChatMessage, type WebSocketMessage } from '../../core/services/api';
+import { Bot, User as UserIcon } from 'lucide-react';
 
 const wsUrl = 'wss://restrictedchat.purplemeadow-b77df452.eastus.azurecontainerapps.io/alice/aiforgood/chat';
 
@@ -43,6 +44,11 @@ const initialMessages = {
   general: [
     { id: 1, user: 'Alice', text: 'Welcome to the General channel!', time: '09:00' },
   ],
+};
+
+const getUserColor = (userId: number) => {
+  const colors = ['#ADBDAD', '#E6A4A4', '#6FA5B3'];
+  return colors[userId % colors.length];
 };
 
 export function AiForGoodPage() {
@@ -198,7 +204,6 @@ export function AiForGoodPage() {
               },
               (error) => {
                 console.error('WebSocket error:', error);
-                // Don't set error state here, let the reconnection attempt happen
               },
               (event) => {
                 console.log('WebSocket closed:', event);
@@ -267,25 +272,6 @@ export function AiForGoodPage() {
     }
   };
 
-  // Build a map of user -> color for this channel
-  const userColorMap = (() => {
-    const taken = new Set<string>();
-    const map: Record<number, string> = {};
-    messages.forEach(msg => {
-      if (msg.user.UserId === 1) { // Alice's UserId is 1
-        map[msg.user.UserId] = AI_COLOR;
-      } else if (user && msg.user.UserId === parseInt(user.id)) {
-        map[msg.user.UserId] = USER_COLOR;
-      }
-    });
-    messages.forEach(msg => {
-      if (!map[msg.user.UserId]) {
-        map[msg.user.UserId] = getOtherUserColor(msg.user.DisplayName, taken);
-      }
-    });
-    return map;
-  })();
-
   if (isLoading) {
     return <div className="flex items-center justify-center h-full">Loading...</div>;
   }
@@ -328,32 +314,53 @@ export function AiForGoodPage() {
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-              {messages.map((message) => (
-                <div
-                  key={message.MessageId}
-                  className="flex items-start space-x-3"
-                >
+              {messages.map((message) => {
+                const isAlice = message.user.UserId === 1;
+                const isCurrentUser = user && message.user.UserId === parseInt(user.id);
+                const userColor = getUserColor(message.user.UserId);
+                return (
                   <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold"
-                    style={{
-                      backgroundColor: userColorMap[message.user.UserId],
-                    }}
+                    key={message.MessageId}
+                    className="flex justify-start"
                   >
-                    {message.user.DisplayName[0]}
-                  </div>
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      <span className="font-bold text-gray-800">
-                        {message.user.DisplayName}
-                      </span>
-                      <span className="text-gray-500 text-sm">
-                        {new Date(message.Timestamp).toLocaleTimeString()}
-                      </span>
+                    <div className="flex max-w-[80%] flex-row">
+                      {/* Avatar */}
+                      <div className="flex-shrink-0 mr-4">
+                        <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
+                          isAlice
+                            ? 'bg-blue-100'
+                            : isCurrentUser
+                            ? 'bg-purple-100'
+                            : 'bg-gray-100'
+                        }`} style={{ backgroundColor: isAlice ? undefined : isCurrentUser ? undefined : userColor }}>
+                          {isAlice ? (
+                            <Bot size={16} className="text-blue-800" />
+                          ) : isCurrentUser ? (
+                            <UserIcon size={16} className="text-purple-800" />
+                          ) : (
+                            <span className="text-white font-bold">{message.user.DisplayName?.[0]?.toUpperCase() || '?'}</span>
+                          )}
+                        </div>
+                      </div>
+                      {/* Message Bubble */}
+                      <div>
+                        <div className={`rounded-2xl px-4 py-3 ${
+                          isAlice
+                            ? 'bg-blue-100 border border-gray-200 shadow-sm rounded-tl-none'
+                            : isCurrentUser
+                            ? 'bg-purple-600 text-white rounded-tr-none'
+                            : 'border border-gray-200 shadow-sm rounded-tl-none'
+                        }`} style={{ backgroundColor: isAlice ? undefined : isCurrentUser ? undefined : userColor }}>
+                          <div className="text-sm">{message.Text}</div>
+                        </div>
+                        <div className="mt-1 text-xs text-gray-500 text-left"> 
+                          {isAlice ? 'Alice' : isCurrentUser ? 'You' : message.user.DisplayName} · {new Date(message.Timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </div>
                     </div>
-                    <p className="text-gray-600">{message.Text}</p>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               <div ref={messagesEndRef} />
             </div>
 
