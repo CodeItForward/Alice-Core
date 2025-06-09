@@ -178,6 +178,7 @@ export function AiForGoodPage() {
             case 'message':
             case 'text':
             case 'video':
+            case 'image':
               console.log('Processing message of type:', data.type, 'with data:', data);
               if (data.message_id && data.content && data.user_id && data.created_at) {
                 console.log('Creating new message object from data');
@@ -229,8 +230,9 @@ export function AiForGoodPage() {
                       DisplayName: data.display_name || (data.user_id === 1 ? 'Alice' : 'User ' + data.user_id),
                       Email: ''
                     },
-                    type: data.type === 'video' ? 'video' : 'text',
-                    video_url: data.video_url || undefined
+                    type: data.type,
+                    video_url: data.video_url || undefined,
+                    image_url: data.image_url || undefined
                   };
 
                   // Remove any temporary message with the same content
@@ -444,7 +446,7 @@ export function AiForGoodPage() {
                           <div className="text-sm">
                             {/* Always show the message text */}
                             <div>{message.Text}</div>
-                            {/* If video, show embed below text */}
+                            {/* If video, show YouTube embed */}
                             {message.type === 'video' && message.video_url && (
                               <div className="mt-2">
                                 <iframe
@@ -455,6 +457,17 @@ export function AiForGoodPage() {
                                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                   allowFullScreen
                                 ></iframe>
+                              </div>
+                            )}
+                            {/* If image, show image */}
+                            {message.type === 'image' && message.image_url && (
+                              <div className="mt-2">
+                                <img 
+                                  src={message.image_url} 
+                                  alt="Shared image" 
+                                  className="max-w-full rounded-lg shadow-sm"
+                                  style={{ maxHeight: '400px' }}
+                                />
                               </div>
                             )}
                           </div>

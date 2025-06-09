@@ -30,6 +30,7 @@ export interface ChatMessage {
   };
   type?: string;
   video_url?: string;
+  image_url?: string;
 }
 
 export interface PostMessageResponse {
@@ -38,7 +39,7 @@ export interface PostMessageResponse {
 }
 
 export interface WebSocketMessage {
-  type: 'message' | 'text' | 'join' | 'messages_updated' | 'user_joined' | 'user_left' | 'error' | 'video';
+  type: 'message' | 'text' | 'join' | 'messages_updated' | 'user_joined' | 'user_left' | 'error' | 'video' | 'image';
   text?: string;
   content?: string;
   user_id?: number;
@@ -51,7 +52,9 @@ export interface WebSocketMessage {
   active_user_ids?: number[];
   created_at?: string;
   video_url?: string;
+  image_url?: string;
   display_name?: string;
+  temp_id?: number;
 }
 
 export async function getUserByEmail(email: string): Promise<UserInfo> {
