@@ -4,6 +4,8 @@ export interface UserInfo {
   user_id: number;
   email: string;
   display_name: string;
+  chat_id: number;
+  channel_id: number;
   created_at: string;
   updated_at: string;
 }
@@ -59,13 +61,31 @@ export interface WebSocketMessage {
 
 export async function getUserByEmail(email: string): Promise<UserInfo> {
   try {
+    console.log('Attempting to fetch user info for email:', email);
+    console.log('API URL:', `${RESTRICTED_CHAT_API}/users/by-email/${encodeURIComponent(email)}`);
+    
     const response = await fetch(`${RESTRICTED_CHAT_API}/users/by-email/${encodeURIComponent(email)}`);
+    
     if (!response.ok) {
-      throw new Error(`Failed to fetch user info: ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('API Error Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries()),
+        body: errorText
+      });
+      throw new Error(`Failed to fetch user info: ${response.status} ${response.statusText} - ${errorText}`);
     }
-    return await response.json();
+    
+    const data = await response.json();
+    console.log('Successfully fetched user info:', data);
+    return data;
   } catch (error) {
-    console.error('Error fetching user info:', error);
+    console.error('Error fetching user info:', {
+      error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
     throw error;
   }
 }
