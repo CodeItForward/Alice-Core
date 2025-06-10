@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Video, BookOpen, Activity, CheckCircle, Clock } from 'lucide-react';
+import { Video, BookOpen, Activity, CheckCircle, Clock, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface ProgressItem {
   id: string;
@@ -10,6 +11,30 @@ interface ProgressItem {
   link: string;
   videoUrl?: string;
 }
+
+interface StatusIndicatorProps {
+  status: ProgressItem['status'];
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const StatusIndicator: React.FC<StatusIndicatorProps> = ({ status, size = 'md', className }) => {
+  const sizeClasses = {
+    sm: 'w-2 h-2',
+    md: 'w-3 h-3',
+    lg: 'w-4 h-4'
+  };
+
+  const statusClasses = {
+    'completed': 'bg-green-500',
+    'in-progress': 'bg-yellow-500 animate-pulse',
+    'not-started': 'bg-gray-300'
+  };
+
+  return (
+    <div className={`${sizeClasses[size]} ${statusClasses[status]} rounded-full ${className}`} />
+  );
+};
 
 const progressItems: ProgressItem[] = [
   {
@@ -55,17 +80,6 @@ const progressItems: ProgressItem[] = [
   }
 ];
 
-const getStatusIcon = (status: ProgressItem['status']) => {
-  switch (status) {
-    case 'completed':
-      return <CheckCircle size={16} className="text-green-500" />;
-    case 'in-progress':
-      return <Clock size={16} className="text-yellow-500" />;
-    default:
-      return null;
-  }
-};
-
 const getTypeIcon = (type: ProgressItem['type']) => {
   switch (type) {
     case 'video':
@@ -77,8 +91,20 @@ const getTypeIcon = (type: ProgressItem['type']) => {
   }
 };
 
+const getStatusIcon = (status: ProgressItem['status']) => {
+  switch (status) {
+    case 'completed':
+      return <CheckCircle size={16} className="text-green-500" />;
+    case 'in-progress':
+      return <Clock size={16} className="text-yellow-500" />;
+    default:
+      return null;
+  }
+};
+
 const WelcomePage: React.FC = () => {
   const [selectedItem, setSelectedItem] = useState<ProgressItem | null>(null);
+  const navigate = useNavigate();
 
   // Automatically select the Introduction video when the page loads
   useEffect(() => {
@@ -91,6 +117,34 @@ const WelcomePage: React.FC = () => {
   const handleItemClick = (item: ProgressItem) => {
     setSelectedItem(item);
   };
+
+  const handleNextClick = () => {
+    if (!selectedItem) return;
+    
+    const currentIndex = progressItems.findIndex(item => item.id === selectedItem.id);
+    if (currentIndex < progressItems.length - 1) {
+      const nextItem = progressItems[currentIndex + 1];
+      setSelectedItem(nextItem);
+      navigate(nextItem.link);
+    }
+  };
+
+  const getNextButtonState = () => {
+    if (!selectedItem) return { disabled: true, text: 'No item selected' };
+    
+    const currentIndex = progressItems.findIndex(item => item.id === selectedItem.id);
+    if (currentIndex === progressItems.length - 1) {
+      return { disabled: true, text: 'All steps completed' };
+    }
+    
+    const nextItem = progressItems[currentIndex + 1];
+    return {
+      disabled: false,
+      text: `Next: ${nextItem.title}`
+    };
+  };
+
+  const nextButtonState = getNextButtonState();
 
   return (
     <div className="flex h-full bg-gray-50">
@@ -115,7 +169,7 @@ const WelcomePage: React.FC = () => {
               <div className="flex items-center space-x-2">
                 {getTypeIcon(item.type)}
                 <span className="flex-1">{item.title}</span>
-                {getStatusIcon(item.status)}
+                <StatusIndicator status={item.status} />
               </div>
             </button>
           ))}
@@ -155,16 +209,23 @@ const WelcomePage: React.FC = () => {
               )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-6">
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 className="font-semibold text-purple-800 mb-2">Current Progress</h3>
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Completed</span>
-                    <span className="font-semibold text-green-600">1/5</span>
+                    <span className="font-semibold text-green-600">
+                      {progressItems.filter(item => item.status === 'completed').length}/{progressItems.length}
+                    </span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-green-500 h-2 rounded-full" style={{ width: '20%' }}></div>
+                    <div 
+                      className="bg-green-500 h-2 rounded-full transition-all duration-300" 
+                      style={{ 
+                        width: `${(progressItems.filter(item => item.status === 'completed').length / progressItems.length) * 100}%` 
+                      }}
+                    ></div>
                   </div>
                 </div>
               </div>
@@ -172,15 +233,33 @@ const WelcomePage: React.FC = () => {
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 className="font-semibold text-blue-800 mb-2">Next Steps</h3>
                 <ul className="space-y-2">
-                  <li className="flex items-center text-gray-600">
-                    <Clock size={16} className="mr-2 text-yellow-500" />
-                    Continue reading "Understanding AI Ethics"
-                  </li>
-                  <li className="flex items-center text-gray-600">
-                    <Activity size={16} className="mr-2 text-orange-500" />
-                    Complete the Team Formation Activity
-                  </li>
+                  {progressItems
+                    .filter(item => item.status !== 'completed')
+                    .slice(0, 2)
+                    .map(item => (
+                      <li key={item.id} className="flex items-center text-gray-600">
+                        {getTypeIcon(item.type)}
+                        <span className="ml-2">{item.title}</span>
+                        <StatusIndicator status={item.status} size="sm" className="ml-2" />
+                      </li>
+                    ))}
                 </ul>
+              </div>
+
+              {/* Next Button */}
+              <div className="flex justify-end">
+                <button
+                  onClick={handleNextClick}
+                  disabled={nextButtonState.disabled}
+                  className={`flex items-center px-4 py-2 rounded-md text-white font-medium transition-colors duration-200 ${
+                    nextButtonState.disabled
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-purple-600 hover:bg-purple-700'
+                  }`}
+                >
+                  <span>{nextButtonState.text}</span>
+                  <ArrowRight size={16} className="ml-2" />
+                </button>
               </div>
             </div>
           </div>
