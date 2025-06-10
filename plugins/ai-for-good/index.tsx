@@ -63,5 +63,11 @@ export default {
     { path: '/ai-for-good/knowledgebase', component: KnowledgebasePage },
     { path: '/ai-for-good/project-board', component: ProjectBoardPage },
     { path: '/ai-for-good/test-flex', component: TestFlexLayout },
+    { path: '/ai-for-good/intro-to-ai', component: WelcomePage },
+    { path: '/ai-for-good/prompt-engineering', component: WelcomePage },
+    { path: '/ai-for-good/game-time', component: WelcomePage },
+    { path: '/ai-for-good/teambuilding', component: WelcomePage },
+    { path: '/ai-for-good/mind-map', component: WelcomePage },
+    { path: '/ai-for-good/ai-ethics', component: WelcomePage },
   ]
 }; 

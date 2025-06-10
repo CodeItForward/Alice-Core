@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Video, BookOpen, Activity, CheckCircle, Clock, ArrowRight } from 'lucide-react';
+import { Video, BookOpen, Activity, CheckCircle, Clock, ArrowRight, ChevronDown, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface ProgressItem {
@@ -39,7 +39,7 @@ const StatusIndicator: React.FC<StatusIndicatorProps> = ({ status, size = 'md', 
 const progressItems: ProgressItem[] = [
   {
     id: '1',
-    title: 'Introduction to AI for Good',
+    title: 'Welcome to AI for Good',
     type: 'video',
     status: 'completed',
     duration: '15 min',
@@ -48,35 +48,51 @@ const progressItems: ProgressItem[] = [
   },
   {
     id: '2',
-    title: 'Understanding AI Ethics',
-    type: 'reading',
+    title: 'Intro to AI',
+    type: 'video',
     status: 'in-progress',
     duration: '20 min',
-    link: '/ai-for-good/workspace'
+    link: '/ai-for-good/intro-to-ai'
   },
   {
     id: '3',
-    title: 'Team Formation Activity',
+    title: 'Prompt Engineering Activity',
     type: 'activity',
     status: 'not-started',
     duration: '30 min',
-    link: '/ai-for-good/workspace'
+    link: '/ai-for-good/prompt-engineering'
   },
   {
     id: '4',
-    title: 'AI Tools Overview',
-    type: 'video',
+    title: 'Game Time! Group Activity',
+    type: 'activity',
     status: 'not-started',
-    duration: '25 min',
-    link: '/ai-for-good/workspace'
+    duration: '45 min',
+    link: '/ai-for-good/game-time'
   },
   {
     id: '5',
-    title: 'Project Planning Guide',
+    title: 'Teambuilding',
+    type: 'activity',
+    status: 'not-started',
+    duration: '30 min',
+    link: '/ai-for-good/teambuilding'
+  },
+  {
+    id: '6',
+    title: 'Mind Map Jam',
+    type: 'activity',
+    status: 'not-started',
+    duration: '40 min',
+    link: '/ai-for-good/mind-map'
+  },
+  {
+    id: '7',
+    title: 'Take Home: AI Ethics',
     type: 'reading',
     status: 'not-started',
-    duration: '15 min',
-    link: '/ai-for-good/workspace'
+    duration: '25 min',
+    link: '/ai-for-good/ai-ethics'
   }
 ];
 
@@ -104,6 +120,7 @@ const getStatusIcon = (status: ProgressItem['status']) => {
 
 const WelcomePage: React.FC = () => {
   const [selectedItem, setSelectedItem] = useState<ProgressItem | null>(null);
+  const [isDay1Expanded, setIsDay1Expanded] = useState(true);
   const navigate = useNavigate();
 
   // Automatically select the Introduction video when the page loads
@@ -151,28 +168,46 @@ const WelcomePage: React.FC = () => {
       {/* Sidebar */}
       <div className="w-64 bg-white border-r border-gray-200 p-4">
         <h2 className="text-xl font-bold mb-4 text-gray-800">Your Progress</h2>
-        <div className="space-y-2">
-          {progressItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => handleItemClick(item)}
-              className={`flex items-center w-full text-left px-3 py-2 rounded ${
-                selectedItem?.id === item.id
-                  ? 'bg-purple-100 text-purple-800'
-                  : item.status === 'completed'
-                  ? 'bg-green-50 text-green-800'
-                  : item.status === 'in-progress'
-                  ? 'bg-yellow-50 text-yellow-800'
-                  : 'text-gray-600 hover:bg-purple-50'
-              }`}
-            >
-              <div className="flex items-center space-x-2">
-                {getTypeIcon(item.type)}
-                <span className="flex-1">{item.title}</span>
-                <StatusIndicator status={item.status} />
-              </div>
-            </button>
-          ))}
+        
+        {/* Day 1 Section */}
+        <div className="mb-4">
+          <button
+            onClick={() => setIsDay1Expanded(!isDay1Expanded)}
+            className="flex items-center w-full text-left px-3 py-2 text-gray-700 hover:bg-gray-50 rounded"
+          >
+            {isDay1Expanded ? (
+              <ChevronDown size={16} className="mr-2" />
+            ) : (
+              <ChevronRight size={16} className="mr-2" />
+            )}
+            <span className="font-semibold">Day 1</span>
+          </button>
+          
+          {isDay1Expanded && (
+            <div className="mt-2 space-y-2 pl-4">
+              {progressItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => handleItemClick(item)}
+                  className={`flex items-center w-full text-left px-3 py-2 rounded ${
+                    selectedItem?.id === item.id
+                      ? 'bg-purple-100 text-purple-800'
+                      : item.status === 'completed'
+                      ? 'bg-green-50 text-green-800'
+                      : item.status === 'in-progress'
+                      ? 'bg-yellow-50 text-yellow-800'
+                      : 'text-gray-600 hover:bg-purple-50'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    {getTypeIcon(item.type)}
+                    <span className="flex-1">{item.title}</span>
+                    <StatusIndicator status={item.status} />
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
