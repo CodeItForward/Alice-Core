@@ -33,19 +33,19 @@ const progressItems: ProgressItem[] = [
   },
   {
     id: '3',
-    title: 'Prompt Engineering Activity',
-    type: 'activity',
-    status: 'not-started',
-    duration: '30 min',
-    link: '/ai-for-good/prompt-engineering'
-  },
-  {
-    id: '4',
     title: 'Game Time! Group Activity',
     type: 'activity',
     status: 'not-started',
     duration: '45 min',
     link: '/ai-for-good/game-time'
+  },
+  {
+    id: '4',
+    title: 'Prompt Engineering Activity',
+    type: 'activity',
+    status: 'not-started',
+    duration: '30 min',
+    link: '/ai-for-good/prompt-engineering'
   },
   {
     id: '5',

@@ -52,23 +52,24 @@ const progressItems: ProgressItem[] = [
     type: 'video',
     status: 'in-progress',
     duration: '20 min',
-    link: '/ai-for-good/intro-to-ai'
+    link: '/ai-for-good/intro-to-ai',
+    videoUrl: 'https://www.youtube.com/embed/F26Ni2776hQ'
   },
   {
     id: '3',
-    title: 'Prompt Engineering Activity',
-    type: 'activity',
-    status: 'not-started',
-    duration: '30 min',
-    link: '/ai-for-good/prompt-engineering'
-  },
-  {
-    id: '4',
     title: 'Game Time! Group Activity',
     type: 'activity',
     status: 'not-started',
     duration: '45 min',
     link: '/ai-for-good/game-time'
+  },
+  {
+    id: '4',
+    title: 'Prompt Engineering Activity',
+    type: 'activity',
+    status: 'not-started',
+    duration: '30 min',
+    link: '/ai-for-good/prompt-engineering'
   },
   {
     id: '5',
