@@ -9,6 +9,7 @@ import TestFlexLayout from './TestFlexLayout';
 import TeamSettingsPage from './TeamSettingsPage';
 import WelcomePage from './WelcomePage';
 import IntroToAIPage from './IntroToAIPage';
+import PromptBestPracticesPage from './PromptBestPracticesPage';
 
 const AiForGoodPlugin = () => {
   const { user } = useUser();
@@ -70,5 +71,6 @@ export default {
     { path: '/ai-for-good/teambuilding', component: WelcomePage },
     { path: '/ai-for-good/mind-map', component: WelcomePage },
     { path: '/ai-for-good/ai-ethics', component: WelcomePage },
+    { path: '/ai-for-good/prompt-best-practices', component: PromptBestPracticesPage },
   ]
 }; 
