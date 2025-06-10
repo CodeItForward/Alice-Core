@@ -1,150 +1,100 @@
-import React, { useState, useEffect } from 'react';
-import { Video, BookOpen, Activity, CheckCircle, Clock, ArrowRight, ChevronDown, ChevronRight } from 'lucide-react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowRight, Video, MessageSquare, Image as ImageIcon, Save, X, BookOpen, Activity } from 'lucide-react';
 
 interface ProgressItem {
   id: string;
   title: string;
   type: 'video' | 'reading' | 'activity';
-  status: 'completed' | 'in-progress' | 'not-started';
-  duration?: string;
+  status: 'not-started' | 'in-progress' | 'completed';
+  duration: string;
   link: string;
-  videoUrl?: string;
+}
+
+interface ComicPanel {
+  id: number;
+  imageUrl: string;
+  caption: string;
 }
 
 const progressItems: ProgressItem[] = [
   {
-    id: '1',
+    id: 'welcome',
     title: 'Welcome to AI for Good',
     type: 'video',
     status: 'completed',
-    duration: '15 min',
-    link: '/ai-for-good/welcome',
-    videoUrl: 'https://www.youtube.com/embed/reLFHLlNBbk'
+    duration: '5 min',
+    link: '/ai-for-good/welcome'
   },
   {
-    id: '2',
+    id: 'intro',
     title: 'Intro to AI',
     type: 'video',
-    status: 'in-progress',
-    duration: '20 min',
-    link: '/ai-for-good/intro-to-ai',
-    videoUrl: 'https://www.youtube.com/embed/F26Ni2776hQ'
+    status: 'completed',
+    duration: '10 min',
+    link: '/ai-for-good/intro'
   },
   {
-    id: '3',
+    id: 'game-time',
     title: 'Game Time! Group Activity',
     type: 'activity',
-    status: 'in-progress',
-    duration: '45 min',
+    status: 'completed',
+    duration: '20 min',
     link: '/ai-for-good/game-time'
   },
   {
-    id: '4',
+    id: 'prompt-best-practices',
     title: 'Prompt Engineering Best Practices',
     type: 'reading',
-    status: 'not-started',
-    duration: '20 min',
+    status: 'completed',
+    duration: '15 min',
     link: '/ai-for-good/prompt-best-practices'
   },
   {
-    id: '5',
+    id: 'prompt-engineering',
     title: 'Prompt Engineering Activity',
     type: 'activity',
-    status: 'not-started',
+    status: 'in-progress',
     duration: '30 min',
     link: '/ai-for-good/prompt-engineering'
   },
   {
-    id: '6',
+    id: 'teambuilding',
     title: 'Teambuilding',
     type: 'activity',
     status: 'not-started',
-    duration: '30 min',
+    duration: '25 min',
     link: '/ai-for-good/teambuilding'
   },
   {
-    id: '7',
+    id: 'mind-map',
     title: 'Mind Map Jam',
     type: 'activity',
     status: 'not-started',
-    duration: '40 min',
+    duration: '20 min',
     link: '/ai-for-good/mind-map'
   },
   {
-    id: '8',
+    id: 'ai-ethics',
     title: 'Take Home: AI Ethics',
     type: 'reading',
     status: 'not-started',
-    duration: '25 min',
+    duration: '15 min',
     link: '/ai-for-good/ai-ethics'
   }
 ];
 
-const getTypeIcon = (type: ProgressItem['type']) => {
-  switch (type) {
-    case 'video':
-      return <Video size={16} className="text-blue-500" />;
-    case 'reading':
-      return <BookOpen size={16} className="text-purple-500" />;
-    case 'activity':
-      return <Activity size={16} className="text-orange-500" />;
-  }
-};
-
-const getStatusIcon = (status: ProgressItem['status']) => {
-  switch (status) {
-    case 'completed':
-      return <CheckCircle size={16} className="text-green-500" />;
-    case 'in-progress':
-      return <Clock size={16} className="text-yellow-500" />;
-    default:
-      return null;
-  }
-};
-
-const StatusIndicator: React.FC<{ status: ProgressItem['status']; size?: 'sm' | 'md'; className?: string }> = ({ 
-  status, 
-  size = 'md',
-  className = ''
-}) => {
-  const baseClasses = "inline-flex items-center justify-center rounded-full";
-  const sizeClasses = size === 'sm' ? 'w-4 h-4 text-xs' : 'w-6 h-6 text-sm';
-  
-  switch (status) {
-    case 'completed':
-      return (
-        <span className={`${baseClasses} ${sizeClasses} bg-green-100 text-green-800 ${className}`}>
-          ✓
-        </span>
-      );
-    case 'in-progress':
-      return (
-        <span className={`${baseClasses} ${sizeClasses} bg-yellow-100 text-yellow-800 ${className}`}>
-          ⟳
-        </span>
-      );
-    default:
-      return (
-        <span className={`${baseClasses} ${sizeClasses} bg-gray-100 text-gray-400 ${className}`}>
-          ○
-        </span>
-      );
-  }
-};
-
 const PromptEngineeringPage: React.FC = () => {
-  const [selectedItem, setSelectedItem] = useState<ProgressItem | null>(null);
-  const [isDay1Expanded, setIsDay1Expanded] = useState(true);
   const navigate = useNavigate();
-
-  // Automatically select the Prompt Engineering Activity when the page loads
-  useEffect(() => {
-    const promptEngineering = progressItems.find(item => item.id === '5');
-    if (promptEngineering) {
-      setSelectedItem(promptEngineering);
-    }
-  }, []);
+  const [selectedItem, setSelectedItem] = useState<ProgressItem | null>(null);
+  const [comicPanels, setComicPanels] = useState<ComicPanel[]>([
+    { id: 1, imageUrl: '', caption: '' },
+    { id: 2, imageUrl: '', caption: '' },
+    { id: 3, imageUrl: '', caption: '' },
+    { id: 4, imageUrl: '', caption: '' }
+  ]);
+  const [chatMessage, setChatMessage] = useState('');
+  const [showVideo, setShowVideo] = useState(true);
 
   const handleItemClick = (item: ProgressItem) => {
     setSelectedItem(item);
@@ -152,155 +102,193 @@ const PromptEngineeringPage: React.FC = () => {
   };
 
   const handleNextClick = () => {
-    if (!selectedItem) return;
-    
-    const currentIndex = progressItems.findIndex(item => item.id === selectedItem.id);
-    if (currentIndex < progressItems.length - 1) {
-      const nextItem = progressItems[currentIndex + 1];
-      setSelectedItem(nextItem);
-      navigate(nextItem.link);
+    if (selectedItem) {
+      const currentIndex = progressItems.findIndex(item => item.id === selectedItem.id);
+      if (currentIndex < progressItems.length - 1) {
+        const nextItem = progressItems[currentIndex + 1];
+        setSelectedItem(nextItem);
+        navigate(nextItem.link);
+      }
     }
   };
 
-  const getNextButtonState = () => {
-    if (!selectedItem) return { disabled: true, text: 'No item selected' };
-    
-    const currentIndex = progressItems.findIndex(item => item.id === selectedItem.id);
-    if (currentIndex === progressItems.length - 1) {
-      return { disabled: true, text: 'All steps completed' };
-    }
-    
-    const nextItem = progressItems[currentIndex + 1];
-    return {
-      disabled: false,
-      text: `Next: ${nextItem.title}`
-    };
+  const handleSaveImage = (panelId: number, imageUrl: string) => {
+    setComicPanels(panels => 
+      panels.map(panel => 
+        panel.id === panelId ? { ...panel, imageUrl } : panel
+      )
+    );
   };
 
-  const nextButtonState = getNextButtonState();
+  const handleUpdateCaption = (panelId: number, caption: string) => {
+    setComicPanels(panels =>
+      panels.map(panel =>
+        panel.id === panelId ? { ...panel, caption } : panel
+      )
+    );
+  };
+
+  const nextButtonState = {
+    text: 'Next Activity',
+    disabled: !selectedItem || selectedItem.id === progressItems[progressItems.length - 1].id
+  };
 
   return (
-    <div className="flex h-full bg-gray-50">
+    <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
       <div className="w-64 bg-white border-r border-gray-200 p-4">
-        <h2 className="text-xl font-bold mb-4 text-gray-800">Your Progress</h2>
-        
-        {/* Day 1 Section */}
-        <div className="mb-4">
-          <button
-            onClick={() => setIsDay1Expanded(!isDay1Expanded)}
-            className="flex items-center w-full text-left px-3 py-2 text-gray-700 hover:bg-gray-50 rounded"
-          >
-            {isDay1Expanded ? (
-              <ChevronDown size={16} className="mr-2" />
-            ) : (
-              <ChevronRight size={16} className="mr-2" />
-            )}
-            <span className="font-semibold">Day 1</span>
-          </button>
-          
-          {isDay1Expanded && (
-            <div className="mt-2 space-y-2 pl-4">
-              {progressItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => handleItemClick(item)}
-                  className={`flex items-center w-full text-left px-3 py-2 rounded ${
-                    selectedItem?.id === item.id
-                      ? 'bg-purple-100 text-purple-800'
-                      : item.status === 'completed'
-                      ? 'bg-green-50 text-green-800'
-                      : item.status === 'in-progress'
-                      ? 'bg-yellow-50 text-yellow-800'
-                      : 'text-gray-600 hover:bg-purple-50'
-                  }`}
-                >
-                  <div className="flex items-center space-x-2">
-                    {getTypeIcon(item.type)}
-                    <span className="flex-1">{item.title}</span>
-                    <StatusIndicator status={item.status} />
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <h2 className="text-xl font-bold mb-4 text-gray-800">AI for Good</h2>
+        <ul className="space-y-2">
+          {progressItems.map(item => (
+            <li key={item.id}>
+              <button
+                onClick={() => handleItemClick(item)}
+                className={`w-full text-left px-3 py-2 rounded-lg flex items-center ${
+                  selectedItem?.id === item.id ? 'bg-purple-100 text-purple-800' : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                {item.type === 'video' ? <Video size={16} /> : 
+                 item.type === 'reading' ? <BookOpen size={16} /> : 
+                 <Activity size={16} />}
+                <span className="ml-2">{item.title}</span>
+                <div className={`ml-auto w-2 h-2 rounded-full ${
+                  item.status === 'completed' ? 'bg-green-500' :
+                  item.status === 'in-progress' ? 'bg-yellow-500' :
+                  'bg-gray-300'
+                }`} />
+              </button>
+            </li>
+          ))}
+        </ul>
       </div>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <div className="bg-white p-4 border-b border-gray-200">
-          <h3 className="text-xl font-bold text-gray-800">Journey Hub</h3>
-          <p className="text-gray-500">Track your learning progress and access course materials</p>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-              <h2 className="text-2xl font-bold mb-6 text-gray-800">Prompt Engineering Activity</h2>
-              
-              <div className="prose prose-lg max-w-none">
-                <p className="text-gray-600 italic">
-                  This activity will be available soon. Check back later for hands-on prompt engineering exercises!
-                </p>
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Video Introduction */}
+        {showVideo && (
+          <div className="bg-black bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center">
+            <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold">Welcome to Prompt Engineering!</h3>
+                <button 
+                  onClick={() => setShowVideo(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X size={24} />
+                </button>
               </div>
-            </div>
-
-            <div className="space-y-6">
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="font-semibold text-purple-800 mb-2">Current Progress</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Completed</span>
-                    <span className="font-semibold text-green-600">
-                      {progressItems.filter(item => item.status === 'completed').length}/{progressItems.length}
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-green-500 h-2 rounded-full transition-all duration-300" 
-                      style={{ 
-                        width: `${(progressItems.filter(item => item.status === 'completed').length / progressItems.length) * 100}%` 
-                      }}
-                    ></div>
-                  </div>
+              <div className="aspect-video bg-gray-900 rounded-lg mb-4">
+                {/* Video player will go here */}
+                <div className="w-full h-full flex items-center justify-center text-white">
+                  Video Introduction
                 </div>
               </div>
+              <p className="text-gray-600 mb-4">
+                Learn how to create effective prompts to generate images for your comic strip.
+              </p>
+              <button
+                onClick={() => setShowVideo(false)}
+                className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition"
+              >
+                Get Started
+              </button>
+            </div>
+          </div>
+        )}
 
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="font-semibold text-purple-800 mb-2">Up Next</h3>
-                <ul className="space-y-2">
-                  {progressItems
-                    .filter(item => item.status !== 'completed')
-                    .slice(0, 2)
-                    .map(item => (
-                      <li key={item.id} className="flex items-center text-gray-600">
-                        {getTypeIcon(item.type)}
-                        <span className="ml-2">{item.title}</span>
-                        <StatusIndicator status={item.status} size="sm" className="ml-2" />
-                      </li>
-                    ))}
-                </ul>
+        {/* Instructions */}
+        <div className="bg-white border-b border-gray-200 p-6">
+          <div className="flex justify-between items-start mb-4">
+            <h2 className="text-2xl font-bold">Create Your Comic Strip</h2>
+            <button
+              onClick={() => setShowVideo(true)}
+              className="flex items-center text-purple-600 hover:text-purple-700"
+            >
+              <Video size={16} className="mr-2" />
+              Watch Intro
+            </button>
+          </div>
+          <div className="prose max-w-none">
+            <p className="text-gray-600">
+              Use the chat interface below to work with AI to generate images for your comic strip.
+              Each image should tell part of your story. Add captions to complete your narrative.
+            </p>
+          </div>
+        </div>
+
+        {/* Main Content Area */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Chat Interface */}
+          <div className="w-1/2 border-r border-gray-200 flex flex-col">
+            <div className="flex-1 overflow-y-auto p-4">
+              {/* Chat messages will go here */}
+              <div className="space-y-4">
+                <div className="bg-purple-50 p-4 rounded-lg">
+                  <p className="text-purple-800">
+                    Hi! I'm here to help you create your comic strip. What kind of story would you like to tell?
+                  </p>
+                </div>
               </div>
-
-              {/* Next Button */}
-              <div className="flex justify-end">
-                <button
-                  onClick={handleNextClick}
-                  disabled={nextButtonState.disabled}
-                  className={`flex items-center px-4 py-2 rounded-lg ${
-                    nextButtonState.disabled
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : 'bg-purple-600 text-white hover:bg-purple-700'
-                  }`}
-                >
-                  <span>{nextButtonState.text}</span>
-                  <ArrowRight size={16} className="ml-2" />
+            </div>
+            <div className="border-t border-gray-200 p-4">
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  value={chatMessage}
+                  onChange={(e) => setChatMessage(e.target.value)}
+                  placeholder="Type your message..."
+                  className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+                <button className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition">
+                  Send
                 </button>
               </div>
             </div>
+          </div>
+
+          {/* Comic Strip */}
+          <div className="w-1/2 p-6 overflow-y-auto">
+            <div className="grid grid-cols-2 gap-4">
+              {comicPanels.map(panel => (
+                <div key={panel.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                  <input
+                    type="text"
+                    value={panel.caption}
+                    onChange={(e) => handleUpdateCaption(panel.id, e.target.value)}
+                    placeholder={`Caption for panel ${panel.id}`}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                  <div className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center">
+                    {panel.imageUrl ? (
+                      <img src={panel.imageUrl} alt={`Panel ${panel.id}`} className="w-full h-full object-cover rounded-lg" />
+                    ) : (
+                      <div className="text-gray-400">
+                        <ImageIcon size={32} />
+                        <p className="mt-2">No image yet</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Next Button */}
+        <div className="bg-white border-t border-gray-200 p-4">
+          <div className="flex justify-end">
+            <button
+              onClick={handleNextClick}
+              disabled={nextButtonState.disabled}
+              className={`flex items-center px-4 py-2 rounded-lg ${
+                nextButtonState.disabled
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-purple-600 text-white hover:bg-purple-700'
+              }`}
+            >
+              <span>{nextButtonState.text}</span>
+              <ArrowRight size={16} className="ml-2" />
+            </button>
           </div>
         </div>
       </div>
