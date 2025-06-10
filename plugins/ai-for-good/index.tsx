@@ -10,6 +10,12 @@ import TeamSettingsPage from './TeamSettingsPage';
 import WelcomePage from './WelcomePage';
 import IntroToAIPage from './IntroToAIPage';
 import PromptBestPracticesPage from './PromptBestPracticesPage';
+import GameTimePage from './GameTimePage';
+import PromptEngineeringPage from './PromptEngineeringPage';
+import TeambuildingPage from './TeambuildingPage';
+import MindMapPage from './MindMapPage';
+import AIEthicsPage from './AIEthicsPage';
+import { Navigate } from 'react-router-dom';
 
 const AiForGoodPlugin = () => {
   const { user } = useUser();
@@ -32,7 +38,7 @@ const AiForGoodPlugin = () => {
   if (!roles.includes('ai-for-good')) {
     return (
       <div className="p-6 text-center text-red-600">
-        You do not have permission to access the AI for Good plugin.
+        You do not have access to this feature. Please contact your administrator.
       </div>
     );
   }
@@ -48,7 +54,7 @@ export default {
       children: [
         { label: 'Journey Hub', path: '/ai-for-good/welcome' },
         { label: 'Team Settings', path: '/ai-for-good/team-settings' },
-        { label: 'Team Chat', path: '/ai-for-good' },
+        { label: 'Team Chat', path: '/ai-for-good/chat' },
         { label: 'Achievements', path: '/ai-for-good/achievements' },
         { label: 'Workspace', path: '/ai-for-good/workspace' },
         { label: 'Knowledgebase', path: '/ai-for-good/knowledgebase' },
@@ -57,20 +63,21 @@ export default {
     }
   ],
   routes: [
+    { path: '/ai-for-good/chat', component: AiForGoodPlugin },
     { path: '/ai-for-good/welcome', component: WelcomePage },
     { path: '/ai-for-good/team-settings', component: TeamSettingsPage },
-    { path: '/ai-for-good', component: AiForGoodPlugin },
     { path: '/ai-for-good/achievements', component: AchievementsPage },
     { path: '/ai-for-good/workspace', component: WorkspacePage },
     { path: '/ai-for-good/knowledgebase', component: KnowledgebasePage },
     { path: '/ai-for-good/project-board', component: ProjectBoardPage },
     { path: '/ai-for-good/test-flex', component: TestFlexLayout },
     { path: '/ai-for-good/intro-to-ai', component: IntroToAIPage },
-    { path: '/ai-for-good/prompt-engineering', component: WelcomePage },
-    { path: '/ai-for-good/game-time', component: WelcomePage },
-    { path: '/ai-for-good/teambuilding', component: WelcomePage },
-    { path: '/ai-for-good/mind-map', component: WelcomePage },
-    { path: '/ai-for-good/ai-ethics', component: WelcomePage },
     { path: '/ai-for-good/prompt-best-practices', component: PromptBestPracticesPage },
+    { path: '/ai-for-good/game-time', component: GameTimePage },
+    { path: '/ai-for-good/prompt-engineering', component: PromptEngineeringPage },
+    { path: '/ai-for-good/teambuilding', component: TeambuildingPage },
+    { path: '/ai-for-good/mind-map', component: MindMapPage },
+    { path: '/ai-for-good/ai-ethics', component: AIEthicsPage },
+    { path: '/ai-for-good', element: <Navigate to="/ai-for-good/welcome" replace /> }
   ]
 }; 

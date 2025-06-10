@@ -35,7 +35,7 @@ const progressItems: ProgressItem[] = [
     id: '3',
     title: 'Game Time! Group Activity',
     type: 'activity',
-    status: 'not-started',
+    status: 'in-progress',
     duration: '45 min',
     link: '/ai-for-good/game-time'
   },
@@ -133,16 +133,16 @@ const StatusIndicator: React.FC<{ status: ProgressItem['status']; size?: 'sm' | 
   }
 };
 
-const IntroToAIPage: React.FC = () => {
+const MindMapPage: React.FC = () => {
   const [selectedItem, setSelectedItem] = useState<ProgressItem | null>(null);
   const [isDay1Expanded, setIsDay1Expanded] = useState(true);
   const navigate = useNavigate();
 
-  // Automatically select the Intro to AI video when the page loads
+  // Automatically select the Mind Map Jam activity when the page loads
   useEffect(() => {
-    const introVideo = progressItems.find(item => item.id === '2');
-    if (introVideo) {
-      setSelectedItem(introVideo);
+    const mindMap = progressItems.find(item => item.id === '7');
+    if (mindMap) {
+      setSelectedItem(mindMap);
     }
   }, []);
 
@@ -239,22 +239,12 @@ const IntroToAIPage: React.FC = () => {
         <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
           <div className="max-w-4xl mx-auto">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-              <h2 className="text-xl font-semibold mb-4">Introduction to AI</h2>
-              <p className="text-gray-700 mb-4">
-                In this video, you'll learn about the fundamentals of Artificial Intelligence and how it's shaping our world.
-              </p>
+              <h2 className="text-2xl font-bold mb-6 text-gray-800">Mind Map Jam</h2>
               
-              <div className="mt-4">
-                <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-                  <iframe
-                    src="https://www.youtube.com/embed/F26Ni2776hQ?rel=0"
-                    title="Introduction to AI"
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className="absolute top-0 left-0 w-full h-full rounded-lg"
-                  ></iframe>
-                </div>
+              <div className="prose prose-lg max-w-none">
+                <p className="text-gray-600 italic">
+                  This activity will be available soon. Check back later for collaborative mind mapping exercises!
+                </p>
               </div>
             </div>
 
@@ -318,4 +308,4 @@ const IntroToAIPage: React.FC = () => {
   );
 };
 
-export default IntroToAIPage; 
+export default MindMapPage; 

@@ -148,6 +148,7 @@ const PromptBestPracticesPage: React.FC = () => {
 
   const handleItemClick = (item: ProgressItem) => {
     setSelectedItem(item);
+    navigate(item.link);
   };
 
   const handleNextClick = () => {

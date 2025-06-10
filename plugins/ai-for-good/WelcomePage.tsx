@@ -65,6 +65,14 @@ const progressItems: ProgressItem[] = [
   },
   {
     id: '4',
+    title: 'Prompt Engineering Best Practices',
+    type: 'reading',
+    status: 'not-started',
+    duration: '20 min',
+    link: '/ai-for-good/prompt-best-practices'
+  },
+  {
+    id: '5',
     title: 'Prompt Engineering Activity',
     type: 'activity',
     status: 'not-started',
@@ -72,7 +80,7 @@ const progressItems: ProgressItem[] = [
     link: '/ai-for-good/prompt-engineering'
   },
   {
-    id: '5',
+    id: '6',
     title: 'Teambuilding',
     type: 'activity',
     status: 'not-started',
@@ -80,7 +88,7 @@ const progressItems: ProgressItem[] = [
     link: '/ai-for-good/teambuilding'
   },
   {
-    id: '6',
+    id: '7',
     title: 'Mind Map Jam',
     type: 'activity',
     status: 'not-started',
@@ -88,7 +96,7 @@ const progressItems: ProgressItem[] = [
     link: '/ai-for-good/mind-map'
   },
   {
-    id: '7',
+    id: '8',
     title: 'Take Home: AI Ethics',
     type: 'reading',
     status: 'not-started',
@@ -134,6 +142,7 @@ const WelcomePage: React.FC = () => {
 
   const handleItemClick = (item: ProgressItem) => {
     setSelectedItem(item);
+    navigate(item.link);
   };
 
   const handleNextClick = () => {
