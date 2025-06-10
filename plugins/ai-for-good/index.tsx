@@ -8,6 +8,7 @@ import ProjectBoardPage from './ProjectBoardPage';
 import TestFlexLayout from './TestFlexLayout';
 import TeamSettingsPage from './TeamSettingsPage';
 import WelcomePage from './WelcomePage';
+import IntroToAIPage from './IntroToAIPage';
 
 const AiForGoodPlugin = () => {
   const { user } = useUser();
@@ -63,7 +64,7 @@ export default {
     { path: '/ai-for-good/knowledgebase', component: KnowledgebasePage },
     { path: '/ai-for-good/project-board', component: ProjectBoardPage },
     { path: '/ai-for-good/test-flex', component: TestFlexLayout },
-    { path: '/ai-for-good/intro-to-ai', component: WelcomePage },
+    { path: '/ai-for-good/intro-to-ai', component: IntroToAIPage },
     { path: '/ai-for-good/prompt-engineering', component: WelcomePage },
     { path: '/ai-for-good/game-time', component: WelcomePage },
     { path: '/ai-for-good/teambuilding', component: WelcomePage },
