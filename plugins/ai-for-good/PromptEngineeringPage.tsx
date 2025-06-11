@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Video, MessageSquare, Image as ImageIcon, Save, X, BookOpen, Activity } from 'lucide-react';
+import { ArrowRight, Video, MessageSquare, Image as ImageIcon, Save, X, BookOpen, Activity, ChevronDown, ChevronRight, CheckCircle, Clock } from 'lucide-react';
 
 interface ProgressItem {
   id: string;
@@ -95,6 +95,7 @@ const PromptEngineeringPage: React.FC = () => {
   ]);
   const [chatMessage, setChatMessage] = useState('');
   const [showVideo, setShowVideo] = useState(true);
+  const [isDay1Expanded, setIsDay1Expanded] = useState(true);
 
   const handleItemClick = (item: ProgressItem) => {
     setSelectedItem(item);
@@ -137,33 +138,64 @@ const PromptEngineeringPage: React.FC = () => {
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
       <div className="w-64 bg-white border-r border-gray-200 p-4">
-        <h2 className="text-xl font-bold mb-4 text-gray-800">AI for Good</h2>
-        <ul className="space-y-2">
-          {progressItems.map(item => (
-            <li key={item.id}>
-              <button
-                onClick={() => handleItemClick(item)}
-                className={`w-full text-left px-3 py-2 rounded-lg flex items-center ${
-                  selectedItem?.id === item.id ? 'bg-purple-100 text-purple-800' : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                {item.type === 'video' ? <Video size={16} /> : 
-                 item.type === 'reading' ? <BookOpen size={16} /> : 
-                 <Activity size={16} />}
-                <span className="ml-2">{item.title}</span>
-                <div className={`ml-auto w-2 h-2 rounded-full ${
-                  item.status === 'completed' ? 'bg-green-500' :
-                  item.status === 'in-progress' ? 'bg-yellow-500' :
-                  'bg-gray-300'
-                }`} />
-              </button>
-            </li>
-          ))}
-        </ul>
+        <h2 className="text-xl font-bold mb-4 text-gray-800">Your Progress</h2>
+        
+        {/* Day 1 Section */}
+        <div className="mb-4">
+          <button
+            onClick={() => setIsDay1Expanded(!isDay1Expanded)}
+            className="flex items-center w-full text-left px-3 py-2 text-gray-700 hover:bg-gray-50 rounded"
+          >
+            {isDay1Expanded ? (
+              <ChevronDown size={16} className="mr-2" />
+            ) : (
+              <ChevronRight size={16} className="mr-2" />
+            )}
+            <span className="font-semibold">Day 1</span>
+          </button>
+          
+          {isDay1Expanded && (
+            <div className="mt-2 space-y-2 pl-4">
+              {progressItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => handleItemClick(item)}
+                  className={`flex items-center w-full text-left px-3 py-2 rounded ${
+                    selectedItem?.id === item.id
+                      ? 'bg-purple-100 text-purple-800'
+                      : item.status === 'completed'
+                      ? 'bg-green-50 text-green-800'
+                      : item.status === 'in-progress'
+                      ? 'bg-yellow-50 text-yellow-800'
+                      : 'text-gray-600 hover:bg-purple-50'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    {item.type === 'video' ? <Video size={16} className="text-blue-500" /> : 
+                     item.type === 'reading' ? <BookOpen size={16} className="text-purple-500" /> : 
+                     <Activity size={16} className="text-orange-500" />}
+                    <span className="flex-1">{item.title}</span>
+                    {item.status === 'completed' ? (
+                      <CheckCircle size={16} className="text-green-500" />
+                    ) : item.status === 'in-progress' ? (
+                      <Clock size={16} className="text-yellow-500" />
+                    ) : null}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header */}
+        <div className="bg-white p-4 border-b border-gray-200">
+          <h3 className="text-xl font-bold text-gray-800">Journey Hub</h3>
+          <p className="text-gray-500">Track your learning progress and access course materials</p>
+        </div>
+
         {/* Video Introduction */}
         {showVideo && (
           <div className="bg-black bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center">
