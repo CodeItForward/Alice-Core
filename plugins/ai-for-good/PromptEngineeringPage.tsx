@@ -116,27 +116,23 @@ const PromptEngineeringPage: React.FC = () => {
   const MAX_RECONNECT_ATTEMPTS = 5;
   const [loadingImageId, setLoadingImageId] = useState<number | null>(null);
 
-  // Fetch channels on component mount
+  // Initialize with prompt engineering channel
   useEffect(() => {
-    const fetchChannels = async () => {
-      try {
-        const fetchedChannels = await getTeamChannels(1);
-        setChannels(fetchedChannels);
-        // Select the default channel if available
-        const defaultChannel = fetchedChannels.find(ch => ch.IsDefault) || fetchedChannels[0];
-        if (defaultChannel) {
-          setSelectedChannel(defaultChannel);
-        }
-      } catch (err) {
-        setError('Failed to load channels');
-        console.error('Error loading channels:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    if (!user) return;
 
-    fetchChannels();
-  }, []);
+    // Create a default channel for prompt engineering
+    const defaultChannel: Channel = {
+      ChannelId: user.PromptEngineeringChannelId,
+      TeamId: user.PromptEngineeringChatId,
+      Name: "Prompt Engineering",
+      IsDefault: true,
+      CreatedAt: new Date().toISOString()
+    };
+    
+    setChannels([defaultChannel]);
+    setSelectedChannel(defaultChannel);
+    setIsLoading(false);
+  }, [user]);
 
   // Load messages and setup WebSocket when channel changes
   useEffect(() => {
@@ -150,7 +146,7 @@ const PromptEngineeringPage: React.FC = () => {
 
     const loadMessages = async () => {
       try {
-        const fetchedMessages = await getChannelMessages(1, selectedChannel.ChannelId);
+        const fetchedMessages = await getChannelMessages(user.PromptEngineeringChatId, user.PromptEngineeringChannelId);
         setMessagesWithLog(fetchedMessages);
       } catch (err) {
         setError('Failed to load messages');
@@ -168,8 +164,8 @@ const PromptEngineeringPage: React.FC = () => {
     if (!isConnectingRef.current) {
       isConnectingRef.current = true;
       const ws = createWebSocketConnection(
-        1,
-        selectedChannel.ChannelId,
+        user.PromptEngineeringChatId,
+        user.PromptEngineeringChannelId,
         (data: WebSocketMessage) => {
           console.log('WebSocket received message:', data);
           
@@ -191,7 +187,7 @@ const PromptEngineeringPage: React.FC = () => {
               if (data.user_id === 1 && data.content?.toLowerCase().includes('image request')) {
                 const loadingMessage: ChatMessage = {
                   MessageId: data.message_id!,
-                  ChannelId: 1,
+                  ChannelId: selectedChannel.ChannelId,
                   UserId: 1,
                   Text: "Generating your image...",
                   Timestamp: data.created_at!,
@@ -210,7 +206,7 @@ const PromptEngineeringPage: React.FC = () => {
               if (data.user_id === 1 && data.image_url && loadingImageId) {
                 const newMessage: ChatMessage = {
                   MessageId: data.message_id!,
-                  ChannelId: 1,
+                  ChannelId: selectedChannel.ChannelId,
                   UserId: data.user_id!,
                   Text: data.content || '',
                   Timestamp: data.created_at!,
@@ -230,7 +226,7 @@ const PromptEngineeringPage: React.FC = () => {
 
               const newMessage: ChatMessage = {
                 MessageId: data.message_id!,
-                ChannelId: 1,
+                ChannelId: selectedChannel.ChannelId,
                 UserId: data.user_id!,
                 Text: data.content || '',
                 Timestamp: data.created_at!,
