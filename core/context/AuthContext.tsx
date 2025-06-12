@@ -21,12 +21,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const info = await getUserByEmail(email);
       setUserInfo(info);
 
-      // Set user in auth context
+      // Set user in auth context with all available information
       setUser({
-        id: info.user_id.toString(),
-        email: info.email,
+        id: info.UserId.toString(),
+        email: info.Email,
         level,
-        displayName: info.display_name
+        displayName: info.DisplayName,
+        chatId: info.PromptEngineeringTeamId,
+        channelId: info.PromptEngineeringChannelId,
+        createdAt: info.CreatedAt,
+        updatedAt: info.UpdatedAt,
+        PersonalTeamId: info.PersonalTeamId,
+        PersonalChannelId: info.PersonalChannelId
       });
     } catch (error) {
       console.error('Error signing in:', error);
