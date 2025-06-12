@@ -1,13 +1,15 @@
 const RESTRICTED_CHAT_API = '/api/chat';
 
 export interface UserInfo {
-  user_id: number;
-  email: string;
-  display_name: string;
-  chat_id: number;
-  channel_id: number;
-  created_at: string;
-  updated_at: string;
+  UserId: number;
+  DisplayName: string;
+  Email: string;
+  CreatedAt: string;
+  UpdatedAt: string;
+  PromptEngineeringTeamId: number;
+  PromptEngineeringChannelId: number;
+  PersonalTeamId: number;
+  PersonalChannelId: number;
 }
 
 export interface Channel {
@@ -62,9 +64,24 @@ export interface WebSocketMessage {
 export async function getUserByEmail(email: string): Promise<UserInfo> {
   try {
     console.log('Attempting to fetch user info for email:', email);
-    console.log('API URL:', `${RESTRICTED_CHAT_API}/users/by-email/${encodeURIComponent(email)}`);
+    const baseUrl = 'https://restrictedchat.purplemeadow-b77df452.eastus.azurecontainerapps.io';
+    const url = `${baseUrl}/users/by-email/${encodeURIComponent(email)}/metadata`;
+    console.log('API URL:', url);
     
-    const response = await fetch(`${RESTRICTED_CHAT_API}/users/by-email/${encodeURIComponent(email)}`);
+    console.log('Making fetch request...');
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
+    
+    console.log('Response received:', {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok,
+      headers: Object.fromEntries(response.headers.entries())
+    });
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -77,7 +94,9 @@ export async function getUserByEmail(email: string): Promise<UserInfo> {
       throw new Error(`Failed to fetch user info: ${response.status} ${response.statusText} - ${errorText}`);
     }
     
+    console.log('Parsing response JSON...');
     const data = await response.json();
+    console.log('Raw response data:', data);
     console.log('Successfully fetched user info:', data);
     return data;
   } catch (error) {
