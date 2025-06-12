@@ -87,8 +87,8 @@ const progressItems: ProgressItem[] = [
 ];
 
 const PromptEngineeringPage: React.FC = () => {
-  const navigate = useNavigate();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [selectedItem, setSelectedItem] = useState<ProgressItem | null>(null);
   const [comicPanels, setComicPanels] = useState<ComicPanel[]>([
     { id: 1, imageUrl: '', caption: '' },
@@ -106,6 +106,7 @@ const PromptEngineeringPage: React.FC = () => {
   const [isDay1Expanded, setIsDay1Expanded] = useState(true);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [generatingPanelId, setGeneratingPanelId] = useState<number | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const wsSetupRef = useRef(false);
@@ -294,7 +295,7 @@ const PromptEngineeringPage: React.FC = () => {
       if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
         const message = {
           type: 'message',
-          content: trimmedMessage,
+          text: `@alice ${trimmedMessage}`,
           user_id: parseInt(user.id),
           reply_to_message_id: null
         };
@@ -548,9 +549,23 @@ const PromptEngineeringPage: React.FC = () => {
                                 <img 
                                   src={message.image_url} 
                                   alt="Shared image" 
-                                  className="max-w-full rounded-lg shadow-sm"
+                                  className="max-w-full rounded-lg shadow-sm cursor-pointer hover:opacity-90 transition"
                                   style={{ maxHeight: '400px' }}
+                                  onClick={() => message.image_url && setSelectedImage(message.image_url)}
                                 />
+                                {isAlice && (
+                                  <div className="mt-2 grid grid-cols-2 gap-2">
+                                    {[1, 2, 3, 4].map((panelId) => (
+                                      <button
+                                        key={panelId}
+                                        onClick={() => message.image_url && handleSaveImage(panelId, message.image_url)}
+                                        className="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700 transition text-sm"
+                                      >
+                                        Use for Panel {panelId}
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
                             )}
                             {message.type === 'loading' && (
@@ -648,8 +663,32 @@ const PromptEngineeringPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Image Modal */}
+      {selectedImage && (
+        <div className="bg-black bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-6 max-w-3xl w-full mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold">Image Preview</h3>
+              <button 
+                onClick={() => setSelectedImage(null)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <div className="rounded-lg overflow-hidden max-h-[calc(100vh-12rem)]">
+              <img
+                src={selectedImage}
+                alt="Full size"
+                className="w-full h-auto object-contain"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default PromptEngineeringPage; 
+export default PromptEngineeringPage;
