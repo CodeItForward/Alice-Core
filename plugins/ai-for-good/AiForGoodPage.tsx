@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../core/context/AuthContext';
 import { getTeamChannels, getChannelMessages, postMessage, createWebSocketConnection, type Channel, type ChatMessage, type WebSocketMessage } from '../../core/services/api';
-import { Bot, User as UserIcon } from 'lucide-react';
-
-const wsUrl = 'wss://restrictedchat.purplemeadow-b77df452.eastus.azurecontainerapps.io/alice/aiforgood/chat';
+import { Bot, User as UserIcon, Loader2 } from 'lucide-react';
 
 const getYouTubeId = (url: string) => {
   // Handles both youtu.be and youtube.com URLs
@@ -57,22 +55,23 @@ export function AiForGoodPage() {
   const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeUsers, setActiveUsers] = useState(0);
   const wsRef = useRef<WebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const isConnectingRef = useRef(false);
-  const reconnectTimeoutRef = useRef<number>();
-  const reconnectAttemptsRef = useRef(0);
-  const MAX_RECONNECT_ATTEMPTS = 5;
   const wsSetupRef = useRef(false);
+  const isConnectingRef = useRef(false);
+  const reconnectAttemptsRef = useRef(0);
+  const reconnectTimeoutRef = useRef<number | null>(null);
   const processedMessageIds = useRef<Set<number>>(new Set());
+  const MAX_RECONNECT_ATTEMPTS = 5;
+  const [loadingImageId, setLoadingImageId] = useState<number | null>(null);
 
   // Wrapper to log every setMessages call
   const setMessagesWithLog = (...args: Parameters<typeof setMessages>) => {
-    console.log('setMessages called from', new Error().stack);
-    return setMessages(...args);
+    console.log('setMessages called with args:', args);
+    setMessages(...args);
   };
 
   // Cleanup function for WebSocket
@@ -84,7 +83,7 @@ export function AiForGoodPage() {
     }
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = undefined;
+      reconnectTimeoutRef.current = null;
     }
     isConnectingRef.current = false;
     reconnectAttemptsRef.current = 0;
@@ -154,135 +153,99 @@ export function AiForGoodPage() {
         (data: WebSocketMessage) => {
           // Log all incoming WebSocket messages
           console.log('WebSocket received message:', data);
-          // Defensive: skip duplicate messages by message_id
-          if (data.message_id && processedMessageIds.current.has(data.message_id)) {
-            console.log('Skipping duplicate message_id:', data.message_id, 'Current set:', Array.from(processedMessageIds.current));
+          
+          // Skip if no message_id
+          if (!data.message_id) {
+            console.log('Skipping message without message_id');
             return;
           }
-          if (data.message_id) {
-            processedMessageIds.current.add(data.message_id);
-            console.log('Added message_id:', data.message_id, 'Current set:', Array.from(processedMessageIds.current));
+
+          // Skip duplicate messages
+          if (processedMessageIds.current.has(data.message_id)) {
+            console.log('Skipping duplicate message_id:', data.message_id);
+            return;
           }
-          // Clear any existing errors when we receive a message
+
+          // Add message_id to processed set
+          processedMessageIds.current.add(data.message_id);
+          
+          // Clear any existing errors
           setError(null);
-          console.log('Received WebSocket message in AiForGoodPage:', {
-            type: data.type,
-            hasMessages: !!data.messages,
-            messageCount: data.messages?.length,
-            activeUsers: data.active_users,
-            messageId: data.message_id,
-            tempId: data.temp_id
-          });
 
-          switch (data.type) {
-            case 'message':
-            case 'text':
-            case 'video':
-            case 'image':
-              console.log('Processing message of type:', data.type, 'with data:', data);
-              if (data.message_id && data.content && data.user_id && data.created_at) {
-                console.log('Creating new message object from data');
-                setMessagesWithLog(prevMessages => {
-                  console.log('setMessages updater called for message_id:', data.message_id, 'prevMessages length:', prevMessages.length, 'at', new Date().toISOString());
-                  console.log('setMessages stack trace for message_id:', data.message_id, new Error().stack);
+          // Handle the message based on type
+          if (data.content && data.user_id && data.created_at) {
+            setMessagesWithLog(prevMessages => {
+              // Check if this is an image request from Alice
+              if (data.user_id === 1 && data.content?.toLowerCase().includes('image request')) {
+                const loadingMessage: ChatMessage = {
+                  MessageId: data.message_id!,
+                  ChannelId: selectedChannel!.ChannelId,
+                  UserId: 1,
+                  Text: "Generating your image...",
+                  Timestamp: data.created_at!,
+                  ReplyToMessageId: null,
+                  user: {
+                    UserId: 1,
+                    DisplayName: 'Alice',
+                    Email: ''
+                  },
+                  type: 'loading'
+                };
+                setLoadingImageId(data.message_id!);
+                console.log('Adding loading message');
+                return [...prevMessages, loadingMessage];
+              }
 
-                  // Strict check: if the message already exists, do NOT add it again
-                  if (prevMessages.some(msg => msg.MessageId === data.message_id)) {
-                    console.log('Message already exists in prevMessages, skipping add:', data.message_id);
-                    return prevMessages;
-                  }
-
-                  // First check if this message already exists in the state (temp_id logic)
-                  const existingMessage = prevMessages.find(msg => 
-                    (data.temp_id && msg.MessageId === data.temp_id)
-                  );
-
-                  if (existingMessage) {
-                    console.log('Message already exists in state (temp_id):', {
-                      messageId: data.message_id,
-                      tempId: data.temp_id,
-                      existingMessageType: existingMessage.type,
-                      existingMessageId: existingMessage.MessageId
-                    });
-                    // If we have a temp message and received the permanent one, update the ID
-                    if (data.temp_id && existingMessage.MessageId === data.temp_id && data.message_id) {
-                      console.log('Updating temporary message with permanent ID:', data.message_id);
-                      return prevMessages.map(msg => 
-                        msg.MessageId === data.temp_id 
-                          ? { ...msg, MessageId: data.message_id! }
-                          : msg
-                      );
-                    }
-                    return prevMessages;
-                  }
-
-                  // This is a new message
-                  console.log('Adding new message:', data.message_id);
-                  const newMessage: ChatMessage = {
-                    MessageId: data.message_id!,
-                    ChannelId: selectedChannel.ChannelId,
+              // If this is a message with an image from Alice and we have a loading message
+              if (data.user_id === 1 && data.image_url && loadingImageId) {
+                const newMessage: ChatMessage = {
+                  MessageId: data.message_id!,
+                  ChannelId: selectedChannel!.ChannelId,
+                  UserId: data.user_id!,
+                  Text: data.content || '',
+                  Timestamp: data.created_at!,
+                  ReplyToMessageId: null,
+                  user: {
                     UserId: data.user_id!,
-                    Text: data.content!,
-                    Timestamp: data.created_at!,
-                    ReplyToMessageId: null,
-                    user: {
-                      UserId: data.user_id!,
-                      DisplayName: data.display_name || (data.user_id === 1 ? 'Alice' : 'User ' + data.user_id),
-                      Email: ''
-                    },
-                    type: data.type,
-                    video_url: data.video_url || undefined,
-                    image_url: data.image_url || undefined
-                  };
-
-                  // Remove any temporary message with the same content
-                  const filteredMessages = prevMessages.filter(msg => 
-                    !(msg.MessageId === data.temp_id || 
-                      (msg.Text === data.content && 
-                       msg.UserId === data.user_id && 
-                       Math.abs(new Date(msg.Timestamp).getTime() - new Date(data.created_at!).getTime()) < 1000))
-                  );
-
-                  // Deduplicate by MessageId
-                  const deduped = new Map<number, ChatMessage>();
-                  [...filteredMessages, newMessage].forEach(msg => {
-                    deduped.set(msg.MessageId, msg);
-                  });
-                  return Array.from(deduped.values());
-                });
-              } else {
-                console.log('Message data missing required fields:', {
-                  hasMessageId: !!data.message_id,
-                  hasContent: !!data.content,
-                  hasUserId: !!data.user_id,
-                  hasCreatedAt: !!data.created_at
-                });
+                    DisplayName: data.display_name || 'Alice',
+                    Email: ''
+                  },
+                  type: 'image',
+                  image_url: data.image_url
+                };
+                setLoadingImageId(null);
+                // Remove any loading messages and add the new image message
+                const filteredMessages = prevMessages.filter(msg => msg.type !== 'loading');
+                console.log('Removing loading messages');
+                console.log('Messages after filter:', filteredMessages);
+                return [...filteredMessages, newMessage];
               }
-              break;
-            case 'join':
-              console.log('User joined:', data.user_id);
-              break;
-            case 'user_joined':
-              console.log('User joined:', data.user_id);
-              break;
-            case 'user_left':
-              console.log('User left:', data.user_id);
-              break;
-            case 'messages_updated':
-              if (data.messages) {
-                console.log('Messages updated:', data.messages.length);
-                setMessagesWithLog(data.messages);
-              }
-              break;
-            case 'error':
-              console.error('WebSocket error:', data.message);
-              setError(data.message || 'An error occurred');
-              break;
+
+              // Regular message handling
+              const newMessage: ChatMessage = {
+                MessageId: data.message_id!,
+                ChannelId: selectedChannel!.ChannelId,
+                UserId: data.user_id!,
+                Text: data.content || '',
+                Timestamp: data.created_at!,
+                ReplyToMessageId: null,
+                user: {
+                  UserId: data.user_id!,
+                  DisplayName: data.display_name || (data.user_id === 1 ? 'Alice' : 'User ' + data.user_id),
+                  Email: ''
+                },
+                type: data.type || 'text',
+                video_url: data.video_url,
+                image_url: data.image_url
+              };
+
+              return [...prevMessages, newMessage];
+            });
           }
         },
         (error) => {
           console.error('WebSocket error:', error);
-          setError('Connection error occurred');
+          // Don't set error state for connection errors, let the onclose handler handle reconnection
         },
         (event) => {
           console.log('WebSocket closed:', event.code, event.reason);
@@ -329,29 +292,17 @@ export function AiForGoodPage() {
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedChannel || !user) return;
-    const tempMessage = {
-      MessageId: Date.now(),
-      ChannelId: selectedChannel.ChannelId,
-      UserId: user.id,
-      Text: newMessage,
-      Timestamp: new Date().toISOString(),
-      ReplyToMessageId: null,
-      user: {
-        UserId: user.id,
-        DisplayName: user.displayName || user.email,
-        Email: user.email
-      },
-      type: 'text'
-    };
+
+    const trimmedMessage = newMessage.trim();
     setNewMessage('');
+
     try {
       if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
         const message = {
           type: 'message',
-          text: newMessage,
-          user_id: user.id,
-          reply_to_message_id: null,
-          temp_id: tempMessage.MessageId
+          text: trimmedMessage,
+          user_id: parseInt(user.id),
+          reply_to_message_id: null
         };
         wsRef.current.send(JSON.stringify(message));
         console.log('Sending chat message:', message);
@@ -361,6 +312,101 @@ export function AiForGoodPage() {
     } catch (err) {
       setError('Failed to send message');
       console.error('Error sending message:', err);
+    }
+  };
+
+  // Update the WebSocket message handler
+  const handleWebSocketMessage = (data: WebSocketMessage) => {
+    // Log all incoming WebSocket messages
+    console.log('WebSocket received message:', data);
+    
+    // Skip if no message_id
+    if (!data.message_id) {
+      console.log('Skipping message without message_id');
+      return;
+    }
+
+    // Skip duplicate messages
+    if (processedMessageIds.current.has(data.message_id)) {
+      console.log('Skipping duplicate message_id:', data.message_id);
+      return;
+    }
+
+    // Add message_id to processed set
+    processedMessageIds.current.add(data.message_id);
+    
+    // Clear any existing errors
+    setError(null);
+
+    // Handle the message based on type
+    if (data.content && data.user_id && data.created_at) {
+      setMessagesWithLog(prevMessages => {
+        // Check if this is an image request from Alice
+        if (data.user_id === 1 && data.content?.toLowerCase().includes('image request')) {
+          const loadingMessage: ChatMessage = {
+            MessageId: data.message_id!,
+            ChannelId: selectedChannel!.ChannelId,
+            UserId: 1,
+            Text: "Generating your image...",
+            Timestamp: data.created_at!,
+            ReplyToMessageId: null,
+            user: {
+              UserId: 1,
+              DisplayName: 'Alice',
+              Email: ''
+            },
+            type: 'loading'
+          };
+          setLoadingImageId(data.message_id!);
+          console.log('Adding loading message');
+          return [...prevMessages, loadingMessage];
+        }
+
+        // If this is a message with an image from Alice and we have a loading message
+        if (data.user_id === 1 && data.image_url && loadingImageId) {
+          const newMessage: ChatMessage = {
+            MessageId: data.message_id!,
+            ChannelId: selectedChannel!.ChannelId,
+            UserId: data.user_id!,
+            Text: data.content || '',
+            Timestamp: data.created_at!,
+            ReplyToMessageId: null,
+            user: {
+              UserId: data.user_id!,
+              DisplayName: data.display_name || 'Alice',
+              Email: ''
+            },
+            type: 'image',
+            image_url: data.image_url
+          };
+          setLoadingImageId(null);
+          // Remove any loading messages and add the new image message
+          const filteredMessages = prevMessages.filter(msg => msg.type !== 'loading');
+          console.log('Removing loading messages');
+          console.log('Messages after filter:', filteredMessages);
+          return [...filteredMessages, newMessage];
+        }
+
+        // Regular message handling
+        const newMessage: ChatMessage = {
+          MessageId: data.message_id!,
+          ChannelId: selectedChannel!.ChannelId,
+          UserId: data.user_id!,
+          Text: data.content || '',
+          Timestamp: data.created_at!,
+          ReplyToMessageId: null,
+          user: {
+            UserId: data.user_id!,
+            DisplayName: data.display_name || (data.user_id === 1 ? 'Alice' : 'User ' + data.user_id),
+            Email: ''
+          },
+          type: data.type || 'text',
+          video_url: data.video_url,
+          image_url: data.image_url
+        };
+
+        return [...prevMessages, newMessage];
+      });
     }
   };
 
@@ -468,6 +514,13 @@ export function AiForGoodPage() {
                                   className="max-w-full rounded-lg shadow-sm"
                                   style={{ maxHeight: '400px' }}
                                 />
+                              </div>
+                            )}
+                            {/* If loading, show loading indicator */}
+                            {message.type === 'loading' && (
+                              <div className="mt-1 flex items-center space-x-2">
+                                <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                                <span className="text-gray-600">Generating your image...</span>
                               </div>
                             )}
                           </div>

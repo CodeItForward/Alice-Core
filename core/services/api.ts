@@ -1,4 +1,4 @@
-const RESTRICTED_CHAT_API = 'https://restrictedchat.purplemeadow-b77df452.eastus.azurecontainerapps.io';
+const RESTRICTED_CHAT_API = '/api/chat';
 
 export interface UserInfo {
   user_id: number;
@@ -167,8 +167,7 @@ export function createWebSocketConnection(
   onError: (error: Event) => void,
   onClose: (event: CloseEvent) => void
 ): WebSocket {
-  const baseUrl = 'wss://restrictedchat.purplemeadow-b77df452.eastus.azurecontainerapps.io';
-  const wsUrl = `${baseUrl}/teams/${teamId}/channels/${channelId}/ws`;
+  const wsUrl = `wss://restrictedchat.purplemeadow-b77df452.eastus.azurecontainerapps.io/teams/${teamId}/channels/${channelId}/ws`;
   console.log('Connecting to WebSocket:', wsUrl);
   
   const ws = new WebSocket(wsUrl);
