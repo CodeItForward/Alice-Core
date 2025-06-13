@@ -78,6 +78,6 @@ export default {
     { path: '/ai-for-good/teambuilding', component: TeambuildingPage },
     { path: '/ai-for-good/mind-map', component: MindMapPage },
     { path: '/ai-for-good/ai-ethics', component: AIEthicsPage },
-    { path: '/ai-for-good', element: <Navigate to="/ai-for-good/welcome" replace /> }
+    { path: '/ai-for-good', component: () => <Navigate to="/ai-for-good/welcome" replace /> }
   ]
 }; 

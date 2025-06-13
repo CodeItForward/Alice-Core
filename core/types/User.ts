@@ -5,8 +5,8 @@ export interface User {
   email: string;
   level: UserLevel;
   displayName: string;
-  chatId: number;
-  channelId: number;
+  PromptEngineeringChatId: number;
+  PromptEngineeringChannelId: number;
   createdAt: string;
   updatedAt: string;
   PersonalTeamId: number;

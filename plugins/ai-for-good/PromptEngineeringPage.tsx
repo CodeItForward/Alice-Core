@@ -204,7 +204,7 @@ const PromptEngineeringPage: React.FC = () => {
                 return [...prevMessages, loadingMessage];
               }
 
-              if (data.user_id === 1 && data.image_url && loadingImageId) {
+              if (data.user_id === 1 && data.image_url) {
                 const newMessage: ChatMessage = {
                   MessageId: data.message_id!,
                   ChannelId: selectedChannel.ChannelId,
@@ -221,6 +221,7 @@ const PromptEngineeringPage: React.FC = () => {
                   image_url: data.image_url
                 };
                 setLoadingImageId(null);
+                // Remove any loading messages
                 const filteredMessages = prevMessages.filter(msg => msg.type !== 'loading');
                 return [...filteredMessages, newMessage];
               }
