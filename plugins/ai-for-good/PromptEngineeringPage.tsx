@@ -546,12 +546,6 @@ const PromptEngineeringPage: React.FC = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden pt-12">
-        {/* Header */}
-        <div className="bg-white p-4 border-b border-gray-200">
-          <h3 className="text-xl font-bold text-gray-800">Journey Hub</h3>
-          <p className="text-gray-500">Track your learning progress and access course materials</p>
-        </div>
-
         {/* Video Introduction */}
         {showVideo && (
           <div className="bg-black bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center">
