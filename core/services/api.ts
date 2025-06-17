@@ -61,6 +61,19 @@ export interface WebSocketMessage {
   temp_id?: number;
 }
 
+export interface ComicStrip {
+  ComicStripId: number;
+  UserId: number;
+  Panel1Image: string;
+  Panel1Caption: string;
+  Panel2Image: string;
+  Panel2Caption: string;
+  Panel3Image: string;
+  Panel3Caption: string;
+  Panel4Image: string;
+  Panel4Caption: string;
+}
+
 export async function getUserByEmail(email: string): Promise<UserInfo> {
   try {
     console.log('Attempting to fetch user info for email:', email);
@@ -226,4 +239,52 @@ export function createWebSocketConnection(
   };
 
   return ws;
-} 
+}
+
+export const getComicStrip = async (comicStripId: number): Promise<ComicStrip> => {
+  const baseUrl = 'https://restrictedchat.purplemeadow-b77df452.eastus.azurecontainerapps.io';
+  const response = await fetch(`${baseUrl}/comic-strips/${comicStripId}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch comic strip');
+  }
+  return response.json();
+};
+
+export const getUserComicStrips = async (userId: number): Promise<ComicStrip[]> => {
+  const baseUrl = 'https://restrictedchat.purplemeadow-b77df452.eastus.azurecontainerapps.io';
+  const response = await fetch(`${baseUrl}/comic-strips/user/${userId}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch user comic strips');
+  }
+  return response.json();
+};
+
+export const createComicStrip = async (comicStrip: Omit<ComicStrip, 'ComicStripId'>): Promise<ComicStrip> => {
+  const baseUrl = 'https://restrictedchat.purplemeadow-b77df452.eastus.azurecontainerapps.io';
+  const response = await fetch(`${baseUrl}/comic-strips`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(comicStrip),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to create comic strip');
+  }
+  return response.json();
+};
+
+export const updateComicStrip = async (comicStripId: number, comicStrip: Partial<ComicStrip>): Promise<ComicStrip> => {
+  const baseUrl = 'https://restrictedchat.purplemeadow-b77df452.eastus.azurecontainerapps.io';
+  const response = await fetch(`${baseUrl}/comic-strips/${comicStripId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(comicStrip),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to update comic strip');
+  }
+  return response.json();
+}; 

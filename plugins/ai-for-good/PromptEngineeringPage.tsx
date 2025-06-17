@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Video, MessageSquare, Image as ImageIcon, Save, X, BookOpen, Activity, ChevronDown, ChevronRight, CheckCircle, Clock, Loader2, Bot, User as UserIcon } from 'lucide-react';
 import { useAuth } from '../../core/context/AuthContext';
-import { getTeamChannels, getChannelMessages, postMessage, createWebSocketConnection, type Channel, type ChatMessage, type WebSocketMessage } from '../../core/services/api';
+import { getTeamChannels, getChannelMessages, postMessage, createWebSocketConnection, type Channel, type ChatMessage, type WebSocketMessage, getComicStrip, getUserComicStrips, createComicStrip, updateComicStrip, type ComicStrip } from '../../core/services/api';
 
 interface ProgressItem {
   id: string;
@@ -96,6 +96,7 @@ const PromptEngineeringPage: React.FC = () => {
     { id: 3, imageUrl: '', caption: '' },
     { id: 4, imageUrl: '', caption: '' }
   ]);
+  const [currentComicStripId, setCurrentComicStripId] = useState<number | null>(null);
   const [channels, setChannels] = useState<Channel[]>([]);
   const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -327,20 +328,91 @@ const PromptEngineeringPage: React.FC = () => {
     }
   };
 
-  const handleSaveImage = (panelId: number, imageUrl: string) => {
-    setComicPanels(panels => 
-      panels.map(panel => 
-        panel.id === panelId ? { ...panel, imageUrl } : panel
-      )
-    );
+  // Load or create comic strip when component mounts
+  useEffect(() => {
+    const loadComicStrip = async () => {
+      if (!user) return;
+
+      try {
+        // Try to get existing comic strips
+        const userComicStrips = await getUserComicStrips(parseInt(user.id));
+        
+        if (userComicStrips.length > 0) {
+          // Use the most recent comic strip
+          const comicStrip = userComicStrips[0];
+          setCurrentComicStripId(comicStrip.ComicStripId);
+          setComicPanels([
+            { id: 1, imageUrl: comicStrip.Panel1Image, caption: comicStrip.Panel1Caption },
+            { id: 2, imageUrl: comicStrip.Panel2Image, caption: comicStrip.Panel2Caption },
+            { id: 3, imageUrl: comicStrip.Panel3Image, caption: comicStrip.Panel3Caption },
+            { id: 4, imageUrl: comicStrip.Panel4Image, caption: comicStrip.Panel4Caption }
+          ]);
+        } else {
+          // Create a new comic strip
+          const newComicStrip = await createComicStrip({
+            UserId: parseInt(user.id),
+            Panel1Image: '',
+            Panel1Caption: '',
+            Panel2Image: '',
+            Panel2Caption: '',
+            Panel3Image: '',
+            Panel3Caption: '',
+            Panel4Image: '',
+            Panel4Caption: ''
+          });
+          setCurrentComicStripId(newComicStrip.ComicStripId);
+        }
+      } catch (error) {
+        console.error('Error loading/creating comic strip:', error);
+        setError('Failed to load comic strip data');
+      }
+    };
+
+    loadComicStrip();
+  }, [user]);
+
+  const handleSaveImage = async (panelId: number, imageUrl: string) => {
+    if (!currentComicStripId || !user) return;
+
+    try {
+      // Update local state
+      setComicPanels(panels => 
+        panels.map(panel => 
+          panel.id === panelId ? { ...panel, imageUrl } : panel
+        )
+      );
+
+      // Update in database
+      const updateData: Partial<ComicStrip> = {
+        [`Panel${panelId}Image`]: imageUrl
+      };
+      await updateComicStrip(currentComicStripId, updateData);
+    } catch (error) {
+      console.error('Error saving image:', error);
+      setError('Failed to save image to comic strip');
+    }
   };
 
-  const handleUpdateCaption = (panelId: number, caption: string) => {
-    setComicPanels(panels =>
-      panels.map(panel =>
-        panel.id === panelId ? { ...panel, caption } : panel
-      )
-    );
+  const handleUpdateCaption = async (panelId: number, caption: string) => {
+    if (!currentComicStripId || !user) return;
+
+    try {
+      // Update local state
+      setComicPanels(panels =>
+        panels.map(panel =>
+          panel.id === panelId ? { ...panel, caption } : panel
+        )
+      );
+
+      // Update in database
+      const updateData: Partial<ComicStrip> = {
+        [`Panel${panelId}Caption`]: caption
+      };
+      await updateComicStrip(currentComicStripId, updateData);
+    } catch (error) {
+      console.error('Error updating caption:', error);
+      setError('Failed to update caption');
+    }
   };
 
   const handleGenerateImage = async (panelId: number) => {
