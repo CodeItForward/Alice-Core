@@ -433,6 +433,36 @@ const PromptEngineeringPage: React.FC = () => {
     setGeneratingPanelId(null);
   };
 
+  const handleClearComicStrip = async () => {
+    if (!currentComicStripId || !user) return;
+
+    try {
+      // Reset local state
+      setComicPanels([
+        { id: 1, imageUrl: '', caption: '' },
+        { id: 2, imageUrl: '', caption: '' },
+        { id: 3, imageUrl: '', caption: '' },
+        { id: 4, imageUrl: '', caption: '' }
+      ]);
+
+      // Update in database
+      const updateData: Partial<ComicStrip> = {
+        Panel1Image: '',
+        Panel1Caption: '',
+        Panel2Image: '',
+        Panel2Caption: '',
+        Panel3Image: '',
+        Panel3Caption: '',
+        Panel4Image: '',
+        Panel4Caption: ''
+      };
+      await updateComicStrip(currentComicStripId, updateData);
+    } catch (error) {
+      console.error('Error clearing comic strip:', error);
+      setError('Failed to clear comic strip');
+    }
+  };
+
   const nextButtonState = {
     text: 'Next Activity',
     disabled: !selectedItem || selectedItem.id === progressItems[progressItems.length - 1].id
@@ -515,7 +545,7 @@ const PromptEngineeringPage: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden pt-12">
         {/* Header */}
         <div className="bg-white p-4 border-b border-gray-200">
           <h3 className="text-xl font-bold text-gray-800">Journey Hub</h3>
@@ -558,13 +588,22 @@ const PromptEngineeringPage: React.FC = () => {
         <div className="bg-white border-b border-gray-200 p-6">
           <div className="flex justify-between items-start mb-4">
             <h2 className="text-2xl font-bold">Create Your Comic Strip</h2>
-            <button
-              onClick={() => setShowVideo(true)}
-              className="flex items-center text-purple-600 hover:text-purple-700"
-            >
-              <Video size={16} className="mr-2" />
-              Watch Intro
-            </button>
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={handleClearComicStrip}
+                className="flex items-center text-red-600 hover:text-red-700"
+              >
+                <X size={16} className="mr-2" />
+                Clear Comic Strip
+              </button>
+              <button
+                onClick={() => setShowVideo(true)}
+                className="flex items-center text-purple-600 hover:text-purple-700"
+              >
+                <Video size={16} className="mr-2" />
+                Watch Intro
+              </button>
+            </div>
           </div>
           <div className="prose max-w-none">
             <p className="text-gray-600">
