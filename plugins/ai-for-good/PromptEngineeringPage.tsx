@@ -117,6 +117,12 @@ const PromptEngineeringPage: React.FC = () => {
   const processedMessageIds = useRef<Set<number>>(new Set());
   const MAX_RECONNECT_ATTEMPTS = 5;
   const [loadingImageId, setLoadingImageId] = useState<number | null>(null);
+  const VERSION = '1.0.1';
+
+  // Log version on component mount
+  useEffect(() => {
+    console.log('PromptEngineeringPage version:', VERSION);
+  }, []);
 
   // Initialize with prompt engineering channel
   useEffect(() => {
@@ -149,6 +155,14 @@ const PromptEngineeringPage: React.FC = () => {
     const loadMessages = async () => {
       try {
         const fetchedMessages = await getChannelMessages(user.PromptEngineeringChatId, user.PromptEngineeringChannelId);
+        // Clear processed message IDs when loading initial messages
+        processedMessageIds.current.clear();
+        // Add all message IDs to processed set
+        fetchedMessages.forEach(msg => {
+          if (msg.MessageId) {
+            processedMessageIds.current.add(msg.MessageId);
+          }
+        });
         setMessagesWithLog(fetchedMessages);
       } catch (err) {
         setError('Failed to load messages');
@@ -186,6 +200,13 @@ const PromptEngineeringPage: React.FC = () => {
 
           if (data.content && data.user_id && data.created_at) {
             setMessagesWithLog(prevMessages => {
+              // Check if message already exists
+              if (prevMessages.some(msg => msg.MessageId === data.message_id)) {
+                console.log('Message already exists, skipping:', data.message_id);
+                return prevMessages;
+              }
+
+              // Check if this is an image request from Alice
               if (data.user_id === 1 && data.content?.toLowerCase().includes('image request')) {
                 const loadingMessage: ChatMessage = {
                   MessageId: data.message_id!,
@@ -250,6 +271,7 @@ const PromptEngineeringPage: React.FC = () => {
         },
         (error) => {
           console.error('WebSocket error:', error);
+          setError('Connection error occurred');
         },
         (event) => {
           console.log('WebSocket closed:', event.code, event.reason);
@@ -261,6 +283,7 @@ const PromptEngineeringPage: React.FC = () => {
             reconnectTimeoutRef.current = window.setTimeout(() => {
               if (selectedChannel && user) {
                 isConnectingRef.current = false;
+                wsSetupRef.current = false;
                 setSelectedChannel({ ...selectedChannel });
               }
             }, 1000 * Math.min(30, Math.pow(2, reconnectAttemptsRef.current)));

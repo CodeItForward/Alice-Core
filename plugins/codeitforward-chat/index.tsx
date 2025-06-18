@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../core/context/AuthContext';
-import { getChannelMessages, postMessage, createWebSocketConnection, type ChatMessage, type WebSocketMessage } from '../../core/services/api';
+import { getChannelMessages, postMessage, createWebSocketConnection, type ChatMessage, type WebSocketMessage, getTeamChannels, type Channel } from '../../core/services/api';
 import { Bot, User as UserIcon, Loader2 } from 'lucide-react';
 
 // Helper function to get a consistent color for a user
@@ -26,6 +26,8 @@ const CodeItForwardChatPage: React.FC = () => {
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeUsers, setActiveUsers] = useState(0);
+  const [channels, setChannels] = useState<Channel[]>([]);
+  const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isConnectingRef = useRef(false);
@@ -38,10 +40,6 @@ const CodeItForwardChatPage: React.FC = () => {
   // Debug logging for user data
   useEffect(() => {
     console.log('User data:', user);
-    if (user) {
-      console.log('Personal Team ID:', user.PersonalTeamId);
-      console.log('Personal Channel ID:', user.PersonalChannelId);
-    }
   }, [user]);
 
   // Wrapper function to log every call to setMessages
@@ -71,29 +69,52 @@ const CodeItForwardChatPage: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Load initial messages
+  // Load channels for team 1
   useEffect(() => {
-    const loadMessages = async () => {
-      if (!user) return;
+    const loadChannels = async () => {
       try {
-        console.log('Loading messages with teamId:', user.PersonalTeamId, 'channelId:', user.PersonalChannelId);
-        const initialMessages = await getChannelMessages(user.PersonalTeamId, user.PersonalChannelId, 50, 0);
-        console.log('Loaded initial messages:', initialMessages.length);
-        setMessagesWithLog(() => initialMessages);
+        console.log('Loading channels for team 1');
+        const fetchedChannels = await getTeamChannels(1);
+        console.log('Loaded channels:', fetchedChannels);
+        setChannels(fetchedChannels);
+        // Select the default channel if available
+        const defaultChannel = fetchedChannels.find(ch => ch.IsDefault) || fetchedChannels[0];
+        if (defaultChannel) {
+          setSelectedChannel(defaultChannel);
+        }
       } catch (err) {
-        console.error('Error loading messages:', err);
-        setError('Failed to load messages');
+        console.error('Error loading channels:', err);
+        setError('Failed to load channels');
       } finally {
         setIsLoading(false);
       }
     };
 
+    loadChannels();
+  }, []);
+
+  // Load messages when channel changes
+  useEffect(() => {
+    if (!selectedChannel) return;
+
+    const loadMessages = async () => {
+      try {
+        console.log('Loading messages for channel:', selectedChannel.ChannelId);
+        const initialMessages = await getChannelMessages(1, selectedChannel.ChannelId, 50, 0);
+        console.log('Loaded initial messages:', initialMessages.length);
+        setMessagesWithLog(() => initialMessages);
+      } catch (err) {
+        console.error('Error loading messages:', err);
+        setError('Failed to load messages');
+      }
+    };
+
     loadMessages();
-  }, [user]);
+  }, [selectedChannel]);
 
   // WebSocket connection
   useEffect(() => {
-    if (!user) return;
+    if (!selectedChannel || !user) return;
 
     const setupWebSocket = () => {
       if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -104,10 +125,10 @@ const CodeItForwardChatPage: React.FC = () => {
       // Store user ID in localStorage for WebSocket connection
       localStorage.setItem('userId', user.id);
 
-      console.log('Setting up WebSocket connection with teamId:', user.PersonalTeamId, 'channelId:', user.PersonalChannelId);
+      console.log('Setting up WebSocket connection with teamId: 1, channelId:', selectedChannel.ChannelId);
       const ws = createWebSocketConnection(
-        user.PersonalTeamId,
-        user.PersonalChannelId,
+        1,
+        selectedChannel.ChannelId,
         (data: WebSocketMessage) => {
           // Log all incoming WebSocket messages
           console.log('WebSocket received message:', data);
@@ -139,7 +160,7 @@ const CodeItForwardChatPage: React.FC = () => {
                   // Create new message
                   const newMessage: ChatMessage = {
                     MessageId: data.message_id!,
-                    ChannelId: user.PersonalChannelId,
+                    ChannelId: selectedChannel.ChannelId,
                     UserId: data.user_id!,
                     Text: data.content!,
                     Timestamp: data.created_at!,
@@ -177,6 +198,9 @@ const CodeItForwardChatPage: React.FC = () => {
         },
         (event) => {
           console.log('WebSocket closed:', event.code, event.reason);
+          if (event.code === 1006) {
+            setError('Connection lost. Please refresh the page to reconnect.');
+          }
         }
       );
 
@@ -190,7 +214,7 @@ const CodeItForwardChatPage: React.FC = () => {
     };
 
     setupWebSocket();
-  }, [user]);
+  }, [selectedChannel, user]);
 
   const handleSendMessage = async (e?: React.FormEvent) => {
     // Prevent form submission if event is provided
@@ -211,7 +235,7 @@ const CodeItForwardChatPage: React.FC = () => {
 
     const tempMessage = {
       MessageId: Date.now(),
-      ChannelId: user.PersonalChannelId,
+      ChannelId: selectedChannel?.ChannelId || '',
       UserId: parseInt(user.id),
       Text: newMessage.trim(),
       Timestamp: new Date().toISOString(),

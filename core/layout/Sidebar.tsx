@@ -15,6 +15,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, pluginNavLinks
   const [openSection, setOpenSection] = React.useState<string | null>(null);
   const [isMinimized, setIsMinimized] = React.useState(false);
 
+  console.log('Sidebar received pluginNavLinks:', pluginNavLinks);
+
   const handleSectionClick = (path: string) => {
     setOpenSection(openSection === path ? null : path);
   };
@@ -22,6 +24,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, pluginNavLinks
   const toggleMinimize = () => {
     setIsMinimized(!isMinimized);
   };
+
+  // Filter out chat links
+  const filteredNavLinks = pluginNavLinks.filter(navLink => 
+    !((navLink.path === '/chat' && navLink.label === 'Chat') || 
+      (navLink.path === '/codeitforward-chat' && navLink.label === "Let's Chat"))
+  );
+  console.log('Filtered nav links:', filteredNavLinks);
 
   return (
     <>
@@ -79,41 +88,43 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, pluginNavLinks
           )}
           
           {/* Plugin navigation links */}
-          {pluginNavLinks
-            .filter(navLink => !((navLink.path === '/chat' && navLink.label === 'Chat') || (navLink.path === '/codeitforward-chat' && navLink.label === "Let's Chat")))
-            .map((navLink, index) =>
-              navLink.children ? (
-                <div key={`${navLink.path}-${index}`}> 
-                  <button
-                    className={`flex items-center w-full px-3 py-2 text-gray-700 rounded-md hover:bg-purple-50 hover:text-purple-800 transition-colors duration-200 group font-medium focus:outline-none ${isMinimized ? 'justify-center' : ''}`}
-                    onClick={() => handleSectionClick(navLink.path)}
-                    aria-expanded={openSection === navLink.path}
-                  >
-                    {!isMinimized && <span className="flex-1 text-left">{navLink.label}</span>}
-                    {openSection === navLink.path ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-                  </button>
-                  {openSection === navLink.path && !isMinimized && (
-                    <div className="ml-4 mt-1 space-y-1">
-                      {navLink.children.map((child: any, childIdx: number) => (
+          {filteredNavLinks.map((navLink, index) => {
+            console.log('Rendering nav link:', navLink);
+            return navLink.children ? (
+              <div key={`${navLink.path}-${index}`}> 
+                <button
+                  className={`flex items-center w-full px-3 py-2 text-gray-700 rounded-md hover:bg-purple-50 hover:text-purple-800 transition-colors duration-200 group font-medium focus:outline-none ${isMinimized ? 'justify-center' : ''}`}
+                  onClick={() => handleSectionClick(navLink.path)}
+                  aria-expanded={openSection === navLink.path}
+                >
+                  {!isMinimized && <span className="flex-1 text-left">{navLink.label}</span>}
+                  {openSection === navLink.path ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                </button>
+                {openSection === navLink.path && !isMinimized && (
+                  <div className="ml-4 mt-1 space-y-1">
+                    {navLink.children.map((child: any, childIdx: number) => {
+                      console.log('Rendering child link:', child);
+                      return (
                         <SidebarLink
                           key={`${child.path}-${childIdx}`}
                           to={child.path}
                           label={child.label}
                           isMinimized={isMinimized}
                         />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <SidebarLink 
-                  key={`${navLink.path}-${index}`}
-                  to={navLink.path}
-                  label={navLink.label}
-                  isMinimized={isMinimized}
-                />
-              )
-            )}
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <SidebarLink 
+                key={`${navLink.path}-${index}`}
+                to={navLink.path}
+                label={navLink.label}
+                isMinimized={isMinimized}
+              />
+            );
+          })}
         </nav>
         
         <div className={`absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 ${isMinimized ? 'px-2' : ''}`}>

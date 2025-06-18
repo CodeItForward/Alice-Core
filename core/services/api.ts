@@ -1,4 +1,4 @@
-const RESTRICTED_CHAT_API = '/api/chat';
+const RESTRICTED_CHAT_API = 'https://restrictedchat.purplemeadow-b77df452.eastus.azurecontainerapps.io';
 
 export interface UserInfo {
   UserId: number;
@@ -124,14 +124,30 @@ export async function getUserByEmail(email: string): Promise<UserInfo> {
 
 export async function getTeamChannels(teamId: number): Promise<Channel[]> {
   try {
-    const response = await fetch(`${RESTRICTED_CHAT_API}/teams/${teamId}/channels`);
+    console.log('Fetching channels for team:', teamId);
+    const url = `${RESTRICTED_CHAT_API}/teams/${teamId}/channels`;
+    console.log('API URL:', url);
+    
+    const response = await fetch(url);
+    console.log('Response status:', response.status, response.statusText);
+    
     if (!response.ok) {
       if (response.status === 404) {
+        console.log('No channels found for team:', teamId);
         return [];
       }
-      throw new Error(`Failed to fetch team channels: ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('API Error Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText
+      });
+      throw new Error(`Failed to fetch team channels: ${response.statusText} - ${errorText}`);
     }
-    return await response.json();
+    
+    const data = await response.json();
+    console.log('Channels data:', data);
+    return data;
   } catch (error) {
     console.error('Error fetching team channels:', error);
     throw error;
@@ -199,45 +215,25 @@ export function createWebSocketConnection(
   onError: (error: Event) => void,
   onClose: (event: CloseEvent) => void
 ): WebSocket {
-  const wsUrl = `wss://restrictedchat.purplemeadow-b77df452.eastus.azurecontainerapps.io/teams/${teamId}/channels/${channelId}/ws`;
+  const baseUrl = 'wss://restrictedchat.purplemeadow-b77df452.eastus.azurecontainerapps.io';
+  const wsUrl = `${baseUrl}/teams/${teamId}/channels/${channelId}/ws`;
   console.log('Connecting to WebSocket:', wsUrl);
   
   const ws = new WebSocket(wsUrl);
-
-  // Wait for connection to be fully established
-  ws.onopen = () => {
-    console.log('WebSocket connection established');
-    // Small delay to ensure connection is ready
-    setTimeout(() => {
-      if (ws.readyState === WebSocket.OPEN) {
-        const userId = parseInt(localStorage.getItem('userId') || '1', 10);
-        const message = { user_id: userId };
-        console.log('Sending WebSocket message:', JSON.stringify(message, null, 2));
-        ws.send(JSON.stringify(message));
-      }
-    }, 100);
-  };
-
+  
   ws.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data) as WebSocketMessage;
-      console.log('Received WebSocket message:', JSON.stringify(data, null, 2));
       onMessage(data);
     } catch (error) {
       console.error('Error parsing WebSocket message:', error);
+      onError(error as Event);
     }
   };
-
-  ws.onerror = (error) => {
-    console.error('WebSocket connection error:', error);
-    onError(error);
-  };
-
-  ws.onclose = (event) => {
-    console.log('WebSocket closed with code:', event.code, 'reason:', event.reason);
-    onClose(event);
-  };
-
+  
+  ws.onerror = onError;
+  ws.onclose = onClose;
+  
   return ws;
 }
 

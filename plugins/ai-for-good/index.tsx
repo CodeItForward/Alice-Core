@@ -17,32 +17,52 @@ import MindMapPage from './MindMapPage';
 import AIEthicsPage from './AIEthicsPage';
 import { Navigate } from 'react-router-dom';
 
-const AiForGoodPlugin = () => {
-  const { user } = useUser();
-  const rolesRaw = user?.publicMetadata?.role ?? [];
-  let roles: string[] = [];
-  if (Array.isArray(rolesRaw)) {
-    roles = rolesRaw;
-  } else if (typeof rolesRaw === 'string') {
-    try {
-      const parsed = JSON.parse(rolesRaw);
-      if (Array.isArray(parsed)) {
-        roles = parsed;
-      } else {
+// Wrapper component to enforce role checks
+const withRoleCheck = (Component: React.ComponentType) => {
+  return () => {
+    const { user } = useUser();
+    console.log('=== Clerk User Debug ===');
+    console.log('Full user object:', user);
+    console.log('User ID:', user?.id);
+    console.log('Raw public metadata:', user?.publicMetadata);
+    console.log('Raw unsafe metadata:', user?.unsafeMetadata);
+    console.log('Raw role metadata:', user?.publicMetadata?.role);
+    
+    const rolesRaw = user?.publicMetadata?.role ?? [];
+    console.log('Roles raw value:', rolesRaw);
+    console.log('Roles raw type:', typeof rolesRaw);
+    
+    let roles: string[] = [];
+    if (Array.isArray(rolesRaw)) {
+      roles = rolesRaw;
+      console.log('Roles is array:', roles);
+    } else if (typeof rolesRaw === 'string') {
+      try {
+        const parsed = JSON.parse(rolesRaw);
+        console.log('Parsed JSON:', parsed);
+        if (Array.isArray(parsed)) {
+          roles = parsed;
+        } else {
+          roles = rolesRaw.replace(/[\[\]"]/g, '').split(',').map(r => r.trim());
+        }
+      } catch {
+        console.log('Failed to parse JSON, using string split');
         roles = rolesRaw.replace(/[\[\]"]/g, '').split(',').map(r => r.trim());
       }
-    } catch {
-      roles = rolesRaw.replace(/[\[\]"]/g, '').split(',').map(r => r.trim());
     }
-  }
-  if (!roles.includes('ai-for-good')) {
-    return (
-      <div className="p-6 text-center text-red-600">
-        You do not have access to this feature. Please contact your administrator.
-      </div>
-    );
-  }
-  return <AiForGoodPage />;
+    console.log('Final roles array:', roles);
+    console.log('Has ai-for-good role:', roles.includes('ai-for-good'));
+    console.log('=== End Clerk User Debug ===');
+
+    if (!roles.includes('ai-for-good')) {
+      return (
+        <div className="p-6 text-center text-red-600">
+          You do not have access to this feature. Please contact your administrator.
+        </div>
+      );
+    }
+    return <Component />;
+  };
 };
 
 export default {
@@ -63,21 +83,21 @@ export default {
     }
   ],
   routes: [
-    { path: '/ai-for-good/chat', component: AiForGoodPlugin },
-    { path: '/ai-for-good/welcome', component: WelcomePage },
-    { path: '/ai-for-good/team-settings', component: TeamSettingsPage },
-    { path: '/ai-for-good/achievements', component: AchievementsPage },
-    { path: '/ai-for-good/workspace', component: WorkspacePage },
-    { path: '/ai-for-good/knowledgebase', component: KnowledgebasePage },
-    { path: '/ai-for-good/project-board', component: ProjectBoardPage },
-    { path: '/ai-for-good/test-flex', component: TestFlexLayout },
-    { path: '/ai-for-good/intro-to-ai', component: IntroToAIPage },
-    { path: '/ai-for-good/prompt-best-practices', component: PromptBestPracticesPage },
-    { path: '/ai-for-good/game-time', component: GameTimePage },
-    { path: '/ai-for-good/prompt-engineering', component: PromptEngineeringPage },
-    { path: '/ai-for-good/teambuilding', component: TeambuildingPage },
-    { path: '/ai-for-good/mind-map', component: MindMapPage },
-    { path: '/ai-for-good/ai-ethics', component: AIEthicsPage },
+    { path: '/ai-for-good/chat', component: withRoleCheck(AiForGoodPage) },
+    { path: '/ai-for-good/welcome', component: withRoleCheck(WelcomePage) },
+    { path: '/ai-for-good/team-settings', component: withRoleCheck(TeamSettingsPage) },
+    { path: '/ai-for-good/achievements', component: withRoleCheck(AchievementsPage) },
+    { path: '/ai-for-good/workspace', component: withRoleCheck(WorkspacePage) },
+    { path: '/ai-for-good/knowledgebase', component: withRoleCheck(KnowledgebasePage) },
+    { path: '/ai-for-good/project-board', component: withRoleCheck(ProjectBoardPage) },
+    { path: '/ai-for-good/test-flex', component: withRoleCheck(TestFlexLayout) },
+    { path: '/ai-for-good/intro-to-ai', component: withRoleCheck(IntroToAIPage) },
+    { path: '/ai-for-good/prompt-best-practices', component: withRoleCheck(PromptBestPracticesPage) },
+    { path: '/ai-for-good/game-time', component: withRoleCheck(GameTimePage) },
+    { path: '/ai-for-good/prompt-engineering', component: withRoleCheck(PromptEngineeringPage) },
+    { path: '/ai-for-good/teambuilding', component: withRoleCheck(TeambuildingPage) },
+    { path: '/ai-for-good/mind-map', component: withRoleCheck(MindMapPage) },
+    { path: '/ai-for-good/ai-ethics', component: withRoleCheck(AIEthicsPage) },
     { path: '/ai-for-good', component: () => <Navigate to="/ai-for-good/welcome" replace /> }
   ]
 }; 
