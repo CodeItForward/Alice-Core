@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../core/context/AuthContext';
-import { getChannelMessages, postMessage, createWebSocketConnection, type ChatMessage, type WebSocketMessage, getTeamChannels, type Channel } from '../../core/services/api';
-import { Bot, User as UserIcon, Loader2 } from 'lucide-react';
+import { getChannelMessages, postMessage, createWebSocketConnection, type ChatMessage, type WebSocketMessage, getTeamChannels, type Channel, getUserTeams, type Team } from '../../core/services/api';
+import { Bot, User as UserIcon, Loader2, ChevronDown } from 'lucide-react';
 
 // Helper function to get a consistent color for a user
 const getUserColor = (userId: number): string => {
@@ -28,6 +28,8 @@ const CodeItForwardChatPage: React.FC = () => {
   const [activeUsers, setActiveUsers] = useState(0);
   const [channels, setChannels] = useState<Channel[]>([]);
   const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isConnectingRef = useRef(false);
@@ -69,12 +71,38 @@ const CodeItForwardChatPage: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Load channels for team 1
+  // Load teams for user
+  useEffect(() => {
+    const loadTeams = async () => {
+      if (!user) return;
+      
+      try {
+        console.log('Loading teams for user:', user.id);
+        const fetchedTeams = await getUserTeams(parseInt(user.id));
+        console.log('Loaded teams:', fetchedTeams);
+        setTeams(fetchedTeams);
+        // Select the default team if available
+        const defaultTeam = fetchedTeams.find(t => t.TeamId === 1) || fetchedTeams[0];
+        if (defaultTeam) {
+          setSelectedTeam(defaultTeam);
+        }
+      } catch (err) {
+        console.error('Error loading teams:', err);
+        setError('Failed to load teams');
+      }
+    };
+
+    loadTeams();
+  }, [user]);
+
+  // Load channels for selected team
   useEffect(() => {
     const loadChannels = async () => {
+      if (!selectedTeam) return;
+      
       try {
-        console.log('Loading channels for team 1');
-        const fetchedChannels = await getTeamChannels(1);
+        console.log('Loading channels for team:', selectedTeam.TeamId);
+        const fetchedChannels = await getTeamChannels(selectedTeam.TeamId);
         console.log('Loaded channels:', fetchedChannels);
         setChannels(fetchedChannels);
         // Select the default channel if available
@@ -91,16 +119,16 @@ const CodeItForwardChatPage: React.FC = () => {
     };
 
     loadChannels();
-  }, []);
+  }, [selectedTeam]);
 
   // Load messages when channel changes
   useEffect(() => {
-    if (!selectedChannel) return;
+    if (!selectedChannel || !selectedTeam) return;
 
     const loadMessages = async () => {
       try {
         console.log('Loading messages for channel:', selectedChannel.ChannelId);
-        const initialMessages = await getChannelMessages(1, selectedChannel.ChannelId, 50, 0);
+        const initialMessages = await getChannelMessages(selectedTeam.TeamId, selectedChannel.ChannelId, 50, 0);
         console.log('Loaded initial messages:', initialMessages.length);
         setMessagesWithLog(() => initialMessages);
       } catch (err) {
@@ -110,11 +138,11 @@ const CodeItForwardChatPage: React.FC = () => {
     };
 
     loadMessages();
-  }, [selectedChannel]);
+  }, [selectedChannel, selectedTeam]);
 
   // WebSocket connection
   useEffect(() => {
-    if (!selectedChannel || !user) return;
+    if (!selectedChannel || !user || !selectedTeam) return;
 
     const setupWebSocket = () => {
       if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -125,9 +153,9 @@ const CodeItForwardChatPage: React.FC = () => {
       // Store user ID in localStorage for WebSocket connection
       localStorage.setItem('userId', user.id);
 
-      console.log('Setting up WebSocket connection with teamId: 1, channelId:', selectedChannel.ChannelId);
+      console.log('Setting up WebSocket connection with teamId:', selectedTeam.TeamId, 'channelId:', selectedChannel.ChannelId);
       const ws = createWebSocketConnection(
-        1,
+        selectedTeam.TeamId,
         selectedChannel.ChannelId,
         (data: WebSocketMessage) => {
           // Log all incoming WebSocket messages
@@ -214,7 +242,7 @@ const CodeItForwardChatPage: React.FC = () => {
     };
 
     setupWebSocket();
-  }, [selectedChannel, user]);
+  }, [selectedChannel, user, selectedTeam]);
 
   const handleSendMessage = async (e?: React.FormEvent) => {
     // Prevent form submission if event is provided
@@ -295,6 +323,28 @@ const CodeItForwardChatPage: React.FC = () => {
           <div>
             <h2 className="text-lg font-semibold text-gray-900">CodeItForward Chat</h2>
             <p className="text-sm text-gray-500">{activeUsers} active users</p>
+          </div>
+        </div>
+        
+        {/* Team and Channel Selection */}
+        <div className="flex items-center space-x-4">
+          {/* Team Selection */}
+          <div className="relative">
+            <select
+              value={selectedTeam?.TeamId || ''}
+              onChange={(e) => {
+                const team = teams.find(t => t.TeamId === parseInt(e.target.value));
+                setSelectedTeam(team || null);
+              }}
+              className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            >
+              {teams.map((team) => (
+                <option key={team.TeamId} value={team.TeamId}>
+                  {team.Name}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
           </div>
         </div>
       </div>

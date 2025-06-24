@@ -20,6 +20,13 @@ export interface Channel {
   CreatedAt: string;
 }
 
+export interface Team {
+  TeamId: number;
+  Name: string;
+  Description?: string;
+  CreatedAt: string;
+}
+
 export interface ChatMessage {
   MessageId: number;
   ChannelId: number;
@@ -158,6 +165,38 @@ export async function getTeamChannels(teamId: number): Promise<Channel[]> {
     return data;
   } catch (error) {
     console.error('Error fetching team channels:', error);
+    throw error;
+  }
+}
+
+export async function getUserTeams(userId: number): Promise<Team[]> {
+  try {
+    console.log('Fetching teams for user:', userId);
+    const url = `${RESTRICTED_CHAT_API}/teams/user/${userId}/type/1`;
+    console.log('API URL:', url);
+    
+    const response = await fetch(url);
+    console.log('Response status:', response.status, response.statusText);
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        console.log('No teams found for user:', userId);
+        return [];
+      }
+      const errorText = await response.text();
+      console.error('API Error Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText
+      });
+      throw new Error(`Failed to fetch user teams: ${response.statusText} - ${errorText}`);
+    }
+    
+    const data = await response.json();
+    console.log('Teams data:', data);
+    return data;
+  } catch (error) {
+    console.error('Error fetching user teams:', error);
     throw error;
   }
 }
