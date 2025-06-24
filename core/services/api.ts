@@ -74,6 +74,14 @@ export interface ComicStrip {
   Panel4Caption: string;
 }
 
+export interface ImageUploadResponse {
+  id: string;
+  created: number;
+  data: {
+    url: string;
+  }[];
+}
+
 export async function getUserByEmail(email: string): Promise<UserInfo> {
   try {
     console.log('Attempting to fetch user info for email:', email);
@@ -283,4 +291,79 @@ export const updateComicStrip = async (comicStripId: number, comicStrip: Partial
     throw new Error('Failed to update comic strip');
   }
   return response.json();
-}; 
+};
+
+export async function uploadImageToOpenAI(imageUrl: string): Promise<string> {
+  try {
+    // First fetch the image from the URL
+    const imageResponse = await fetch(imageUrl);
+    if (!imageResponse.ok) {
+      throw new Error(`Failed to fetch image from URL: ${imageResponse.statusText}`);
+    }
+    const imageBlob = await imageResponse.blob();
+
+    // Upload the image to OpenAI
+    const formData = new FormData();
+    formData.append('image', imageBlob);
+
+    const response = await fetch('https://api.openai.com/v1/images/upload', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to upload image to OpenAI: ${response.statusText} - ${errorText}`);
+    }
+
+    const data = await response.json() as ImageUploadResponse;
+    return data.id;
+  } catch (error) {
+    console.error('Error uploading image to OpenAI:', error);
+    throw error;
+  }
+}
+
+export async function generateImageWithReference(
+  prompt: string,
+  imageUrl: string | null = null
+): Promise<string> {
+  try {
+    let referencedImageIds: string[] = [];
+    
+    // If an image URL is provided, upload it first
+    if (imageUrl) {
+      const imageId = await uploadImageToOpenAI(imageUrl);
+      referencedImageIds = [imageId];
+    }
+
+    const response = await fetch('https://api.openai.com/v1/images/generations', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-image-1',
+        prompt,
+        referenced_image_ids: referencedImageIds,
+        n: 1,
+        size: '1024x1024'
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to generate image: ${response.statusText} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    return data.data[0].url;
+  } catch (error) {
+    console.error('Error generating image:', error);
+    throw error;
+  }
+} 

@@ -10,7 +10,7 @@ const MessageInput: React.FC<MessageInputProps> = ({ openAIApiKey }) => {
   const [message, setMessage] = useState('');
   const { addMessage } = useMessages();
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (message.trim()) {
@@ -24,9 +24,8 @@ const MessageInput: React.FC<MessageInputProps> = ({ openAIApiKey }) => {
       
       // Clear input
       setMessage('');
-      
-      // Simulate AI response after a short delay
-      // In the future, this will use the OpenAI API key for real responses
+
+      // Regular text response
       setTimeout(() => {
         const responseMessage = openAIApiKey && openAIApiKey !== 'YOUR_OPENAI_KEY' 
           ? `I'm Alice, your AI assistant with OpenAI integration. How can I help you with "${message.trim()}"?`

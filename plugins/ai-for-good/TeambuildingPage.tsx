@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Video, BookOpen, Activity, CheckCircle, Clock, ArrowRight, ChevronDown, ChevronRight } from 'lucide-react';
+import { Video, BookOpen, Activity, CheckCircle, Clock, ArrowRight, ChevronDown, ChevronRight, Save, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface ProgressItem {
@@ -10,6 +10,19 @@ interface ProgressItem {
   duration?: string;
   link: string;
   videoUrl?: string;
+}
+
+interface TeambuildingForm {
+  firstName: string;
+  animal: string;
+  iceCream: string;
+  funFact: string;
+  travelDestination: string;
+  proudAchievement: string;
+  millionDollarProject: string;
+  helpGroup: string;
+  worldChange: string;
+  mayorForDay: string;
 }
 
 const progressItems: ProgressItem[] = [
@@ -59,7 +72,7 @@ const progressItems: ProgressItem[] = [
     id: '6',
     title: 'Teambuilding',
     type: 'activity',
-    status: 'not-started',
+    status: 'in-progress',
     duration: '30 min',
     link: '/ai-for-good/teambuilding'
   },
@@ -136,7 +149,22 @@ const StatusIndicator: React.FC<{ status: ProgressItem['status']; size?: 'sm' | 
 const TeambuildingPage: React.FC = () => {
   const [selectedItem, setSelectedItem] = useState<ProgressItem | null>(null);
   const [isDay1Expanded, setIsDay1Expanded] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   const navigate = useNavigate();
+
+  const [formData, setFormData] = useState<TeambuildingForm>({
+    firstName: '',
+    animal: '',
+    iceCream: '',
+    funFact: '',
+    travelDestination: '',
+    proudAchievement: '',
+    millionDollarProject: '',
+    helpGroup: '',
+    worldChange: '',
+    mayorForDay: ''
+  });
 
   // Automatically select the Teambuilding activity when the page loads
   useEffect(() => {
@@ -175,6 +203,33 @@ const TeambuildingPage: React.FC = () => {
       disabled: false,
       text: `Next: ${nextItem.title}`
     };
+  };
+
+  const handleInputChange = (field: keyof TeambuildingForm, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    try {
+      // TODO: Replace with actual API call
+      console.log('Submitting form data:', formData);
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 3000);
+    } catch (error) {
+      console.error('Error saving form:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const nextButtonState = getNextButtonState();
@@ -239,13 +294,254 @@ const TeambuildingPage: React.FC = () => {
         <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
           <div className="max-w-4xl mx-auto">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-              <h2 className="text-2xl font-bold mb-6 text-gray-800">Teambuilding</h2>
+              <div className="flex items-center mb-6">
+                <Users className="text-purple-600 mr-3" size={24} />
+                <h2 className="text-2xl font-bold text-gray-800">Teambuilding</h2>
+              </div>
               
-              <div className="prose prose-lg max-w-none">
-                <p className="text-gray-600 italic">
-                  This activity will be available soon. Check back later for team-building exercises and activities!
+              <div className="prose prose-lg max-w-none mb-6">
+                <p className="text-gray-600">
+                  Let's get to know each other better! Fill out this form to share some fun facts about yourself. 
+                  Your responses will help us build a stronger, more connected team.
                 </p>
               </div>
+
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* First Name */}
+                <div>
+                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
+                    What's your first name or nickname?
+                  </label>
+                  <input
+                    type="text"
+                    id="firstName"
+                    value={formData.firstName}
+                    onChange={(e) => handleInputChange('firstName', e.target.value)}
+                    maxLength={100}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="Enter your first name or nickname"
+                    required
+                  />
+                  <div className="text-xs text-gray-500 mt-1">
+                    {formData.firstName.length}/100 characters
+                  </div>
+                </div>
+
+                {/* Animal */}
+                <div>
+                  <label htmlFor="animal" className="block text-sm font-medium text-gray-700 mb-2">
+                    If you were an animal, what would you be and why?
+                  </label>
+                  <textarea
+                    id="animal"
+                    value={formData.animal}
+                    onChange={(e) => handleInputChange('animal', e.target.value)}
+                    maxLength={100}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="e.g., A dolphin because I love swimming and being social"
+                    required
+                  />
+                  <div className="text-xs text-gray-500 mt-1">
+                    {formData.animal.length}/100 characters
+                  </div>
+                </div>
+
+                {/* Ice Cream */}
+                <div>
+                  <label htmlFor="iceCream" className="block text-sm font-medium text-gray-700 mb-2">
+                    What's your favorite ice cream flavor?
+                  </label>
+                  <input
+                    type="text"
+                    id="iceCream"
+                    value={formData.iceCream}
+                    onChange={(e) => handleInputChange('iceCream', e.target.value)}
+                    maxLength={100}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="e.g., Mint chocolate chip"
+                    required
+                  />
+                  <div className="text-xs text-gray-500 mt-1">
+                    {formData.iceCream.length}/100 characters
+                  </div>
+                </div>
+
+                {/* Fun Fact */}
+                <div>
+                  <label htmlFor="funFact" className="block text-sm font-medium text-gray-700 mb-2">
+                    What's one fun fact about you?
+                  </label>
+                  <textarea
+                    id="funFact"
+                    value={formData.funFact}
+                    onChange={(e) => handleInputChange('funFact', e.target.value)}
+                    maxLength={500}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="Share something interesting about yourself!"
+                    required
+                  />
+                  <div className="text-xs text-gray-500 mt-1">
+                    {formData.funFact.length}/500 characters
+                  </div>
+                </div>
+
+                {/* Travel Destination */}
+                <div>
+                  <label htmlFor="travelDestination" className="block text-sm font-medium text-gray-700 mb-2">
+                    If you could travel anywhere in the world for two weeks, where would you go?
+                  </label>
+                  <textarea
+                    id="travelDestination"
+                    value={formData.travelDestination}
+                    onChange={(e) => handleInputChange('travelDestination', e.target.value)}
+                    maxLength={500}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="Describe your dream destination and why you'd go there"
+                    required
+                  />
+                  <div className="text-xs text-gray-500 mt-1">
+                    {formData.travelDestination.length}/500 characters
+                  </div>
+                </div>
+
+                {/* Proud Achievement */}
+                <div>
+                  <label htmlFor="proudAchievement" className="block text-sm font-medium text-gray-700 mb-2">
+                    What's something you've made or helped with that you're proud of?
+                  </label>
+                  <textarea
+                    id="proudAchievement"
+                    value={formData.proudAchievement}
+                    onChange={(e) => handleInputChange('proudAchievement', e.target.value)}
+                    maxLength={500}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="Share a project, achievement, or contribution you're proud of"
+                    required
+                  />
+                  <div className="text-xs text-gray-500 mt-1">
+                    {formData.proudAchievement.length}/500 characters
+                  </div>
+                </div>
+
+                {/* Million Dollar Project */}
+                <div>
+                  <label htmlFor="millionDollarProject" className="block text-sm font-medium text-gray-700 mb-2">
+                    If your team had a million dollars to make something awesome, what would it be?
+                  </label>
+                  <textarea
+                    id="millionDollarProject"
+                    value={formData.millionDollarProject}
+                    onChange={(e) => handleInputChange('millionDollarProject', e.target.value)}
+                    maxLength={500}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="Describe an amazing project you'd create with a million dollars"
+                    required
+                  />
+                  <div className="text-xs text-gray-500 mt-1">
+                    {formData.millionDollarProject.length}/500 characters
+                  </div>
+                </div>
+
+                {/* Help Group */}
+                <div>
+                  <label htmlFor="helpGroup" className="block text-sm font-medium text-gray-700 mb-2">
+                    If you could help one group of people, animals, or the planet, who would you help and how?
+                  </label>
+                  <textarea
+                    id="helpGroup"
+                    value={formData.helpGroup}
+                    onChange={(e) => handleInputChange('helpGroup', e.target.value)}
+                    maxLength={500}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="Describe who you'd help and your approach to making a difference"
+                    required
+                  />
+                  <div className="text-xs text-gray-500 mt-1">
+                    {formData.helpGroup.length}/500 characters
+                  </div>
+                </div>
+
+                {/* World Change */}
+                <div>
+                  <label htmlFor="worldChange" className="block text-sm font-medium text-gray-700 mb-2">
+                    What's one thing you'd change to make your school, town, or the world better?
+                  </label>
+                  <textarea
+                    id="worldChange"
+                    value={formData.worldChange}
+                    onChange={(e) => handleInputChange('worldChange', e.target.value)}
+                    maxLength={500}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="Share an idea for positive change in your community or the world"
+                    required
+                  />
+                  <div className="text-xs text-gray-500 mt-1">
+                    {formData.worldChange.length}/500 characters
+                  </div>
+                </div>
+
+                {/* Mayor for Day */}
+                <div>
+                  <label htmlFor="mayorForDay" className="block text-sm font-medium text-gray-700 mb-2">
+                    If you could be mayor for the day, what would you do?
+                  </label>
+                  <textarea
+                    id="mayorForDay"
+                    value={formData.mayorForDay}
+                    onChange={(e) => handleInputChange('mayorForDay', e.target.value)}
+                    maxLength={500}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="Describe what you'd accomplish as mayor for a day"
+                    required
+                  />
+                  <div className="text-xs text-gray-500 mt-1">
+                    {formData.mayorForDay.length}/500 characters
+                  </div>
+                </div>
+
+                {/* Submit Button */}
+                <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className={`flex items-center px-6 py-2 rounded-lg ${
+                      isSubmitting
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-purple-600 text-white hover:bg-purple-700'
+                    }`}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save size={16} className="mr-2" />
+                        Save Responses
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Success Message */}
+                {isSaved && (
+                  <div className="bg-green-50 border border-green-200 rounded-md p-4">
+                    <div className="flex items-center">
+                      <CheckCircle className="text-green-600 mr-2" size={20} />
+                      <span className="text-green-800 font-medium">Your responses have been saved successfully!</span>
+                    </div>
+                  </div>
+                )}
+              </form>
             </div>
 
             <div className="space-y-6">
