@@ -1,4 +1,6 @@
-const RESTRICTED_CHAT_API = 'https://restrictedchat.purplemeadow-b77df452.eastus.azurecontainerapps.io';
+const RESTRICTED_CHAT_API = typeof window !== 'undefined' && window.location.hostname === 'localhost'
+  ? '/api' 
+  : 'https://restrictedchat.purplemeadow-b77df452.eastus.azurecontainerapps.io';
 
 export interface UserInfo {
   UserId: number;
@@ -25,6 +27,57 @@ export interface Team {
   Name: string;
   Description?: string;
   CreatedAt: string;
+}
+
+export interface StudentProfile {
+  id: number;
+  user_id: number;
+  class_id?: number;
+  team_id: number;
+  first_name: string;
+  fun_fact: string;
+  animal: string;
+  ice_cream: string;
+  travel_location: string;
+  laugh_trigger: string;
+  proud_of: string;
+  build_idea: string;
+  who_to_help: string;
+  world_change: string;
+  mayor_for_day: string;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface StudentProfileCreate {
+  user_id: number;
+  class_id: number;
+  team_id: number;
+  first_name: string;
+  fun_fact: string;
+  animal: string;
+  ice_cream: string;
+  travel_location: string;
+  laugh_trigger: string;
+  proud_of: string;
+  build_idea: string;
+  who_to_help: string;
+  world_change: string;
+  mayor_for_day: string;
+}
+
+export interface StudentProfileUpdate {
+  first_name?: string;
+  fun_fact?: string;
+  animal?: string;
+  ice_cream?: string;
+  travel_location?: string;
+  laugh_trigger?: string;
+  proud_of?: string;
+  build_idea?: string;
+  who_to_help?: string;
+  world_change?: string;
+  mayor_for_day?: string;
 }
 
 export interface ChatMessage {
@@ -92,8 +145,7 @@ export interface ImageUploadResponse {
 export async function getUserByEmail(email: string): Promise<UserInfo> {
   try {
     console.log('Attempting to fetch user info for email:', email);
-    const baseUrl = 'https://restrictedchat.purplemeadow-b77df452.eastus.azurecontainerapps.io';
-    const url = `${baseUrl}/users/by-email/${encodeURIComponent(email)}/metadata`;
+    const url = `${RESTRICTED_CHAT_API}/users/by-email/${encodeURIComponent(email)}/metadata`;
     console.log('API URL:', url);
     
     console.log('Making fetch request...');
@@ -119,7 +171,17 @@ export async function getUserByEmail(email: string): Promise<UserInfo> {
         headers: Object.fromEntries(response.headers.entries()),
         body: errorText
       });
-      throw new Error(`Failed to fetch user info: ${response.status} ${response.statusText} - ${errorText}`);
+      
+      // Provide specific error messages based on status code
+      if (response.status === 404) {
+        throw new Error(`404: User with email "${email}" not found in the system`);
+      } else if (response.status === 500) {
+        throw new Error(`500: Internal server error - ${errorText}`);
+      } else if (response.status === 403) {
+        throw new Error(`403: Access forbidden - ${errorText}`);
+      } else {
+        throw new Error(`Failed to fetch user info: ${response.status} ${response.statusText} - ${errorText}`);
+      }
     }
     
     console.log('Parsing response JSON...');
@@ -181,6 +243,38 @@ export async function getUserTeams(userId: number): Promise<Team[]> {
     if (!response.ok) {
       if (response.status === 404) {
         console.log('No teams found for user:', userId);
+        return [];
+      }
+      const errorText = await response.text();
+      console.error('API Error Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText
+      });
+      throw new Error(`Failed to fetch user teams: ${response.statusText} - ${errorText}`);
+    }
+    
+    const data = await response.json();
+    console.log('Teams data:', data);
+    return data;
+  } catch (error) {
+    console.error('Error fetching user teams:', error);
+    throw error;
+  }
+}
+
+export async function getUserTeamsByType(userId: number, type: number): Promise<Team[]> {
+  try {
+    console.log('Fetching teams for user:', userId, 'type:', type);
+    const url = `${RESTRICTED_CHAT_API}/teams/user/${userId}/type/${type}`;
+    console.log('API URL:', url);
+    
+    const response = await fetch(url);
+    console.log('Response status:', response.status, response.statusText);
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        console.log('No teams found for user:', userId, 'type:', type);
         return [];
       }
       const errorText = await response.text();
@@ -403,6 +497,175 @@ export async function generateImageWithReference(
     return data.data[0].url;
   } catch (error) {
     console.error('Error generating image:', error);
+    throw error;
+  }
+}
+
+// Student Profile API functions
+export async function getStudentProfileByUserId(userId: number): Promise<StudentProfile | null> {
+  try {
+    console.log('=== GET STUDENT PROFILE BY USER ID ===');
+    console.log('User ID:', userId);
+    const url = `${RESTRICTED_CHAT_API}/student-profiles/user/${userId}`;
+    console.log('Full URL:', url);
+    console.log('Method: GET');
+    console.log('Headers: None (default fetch headers)');
+    
+    const response = await fetch(url);
+    console.log('Response Status:', response.status, response.statusText);
+    console.log('Response Headers:', Object.fromEntries(response.headers.entries()));
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        console.log('No student profile found for user:', userId);
+        return null;
+      }
+      const errorText = await response.text();
+      console.error('API Error Response Body:', errorText);
+      console.error('API Error Response Details:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText
+      });
+      throw new Error(`Failed to fetch student profile: ${response.statusText} - ${errorText}`);
+    }
+    
+    const data = await response.json();
+    console.log('Success Response Data:', JSON.stringify(data, null, 2));
+    return data;
+  } catch (error) {
+    console.error('Error fetching student profile by user ID:', error);
+    throw error;
+  }
+}
+
+export async function getStudentProfileByUserAndClass(userId: number, classId: number): Promise<StudentProfile | null> {
+  try {
+    console.log('=== GET STUDENT PROFILE BY USER AND CLASS ===');
+    console.log('User ID:', userId);
+    console.log('Class ID:', classId);
+    const url = `${RESTRICTED_CHAT_API}/student-profiles/user/${userId}/class/${classId}`;
+    console.log('Full URL:', url);
+    console.log('Method: GET');
+    console.log('Headers: None (default fetch headers)');
+    
+    const response = await fetch(url);
+    console.log('Response Status:', response.status, response.statusText);
+    console.log('Response Headers:', Object.fromEntries(response.headers.entries()));
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        console.log('No student profile found for user:', userId, 'class:', classId);
+        const errorText = await response.text();
+        console.log('404 Response Body:', errorText);
+        return null;
+      }
+      const errorText = await response.text();
+      console.error('API Error Response Body:', errorText);
+      console.error('API Error Response Details:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText
+      });
+      throw new Error(`Failed to fetch student profile: ${response.statusText} - ${errorText}`);
+    }
+    
+    const data = await response.json();
+    console.log('Success Response Data:', JSON.stringify(data, null, 2));
+    return data;
+  } catch (error) {
+    console.error('Error fetching student profile by user and class:', error);
+    throw error;
+  }
+}
+
+export async function createStudentProfile(profile: StudentProfileCreate): Promise<StudentProfile> {
+  try {
+    console.log('=== CREATE STUDENT PROFILE ===');
+    console.log('Request Data:', JSON.stringify(profile, null, 2));
+    const url = `${RESTRICTED_CHAT_API}/student-profiles/create`;
+    console.log('Full URL:', url);
+    console.log('Method: POST');
+    console.log('Headers:', {
+      'Content-Type': 'application/json'
+    });
+    
+    const requestBody = JSON.stringify(profile);
+    console.log('Request Body:', requestBody);
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: requestBody,
+    });
+    
+    console.log('Response Status:', response.status, response.statusText);
+    console.log('Response Headers:', Object.fromEntries(response.headers.entries()));
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API Error Response Body:', errorText);
+      console.error('API Error Response Details:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText
+      });
+      throw new Error(`Failed to create student profile: ${response.statusText} - ${errorText}`);
+    }
+    
+    const data = await response.json();
+    console.log('Success Response Data:', JSON.stringify(data, null, 2));
+    return data;
+  } catch (error) {
+    console.error('Error creating student profile:', error);
+    throw error;
+  }
+}
+
+export async function updateStudentProfile(profileId: number, profile: StudentProfileUpdate): Promise<StudentProfile> {
+  try {
+    console.log('=== UPDATE STUDENT PROFILE ===');
+    console.log('Profile ID:', profileId);
+    console.log('Update Data:', JSON.stringify(profile, null, 2));
+    const url = `${RESTRICTED_CHAT_API}/student-profiles/${profileId}`;
+    console.log('Full URL:', url);
+    console.log('Method: PUT');
+    console.log('Headers:', {
+      'Content-Type': 'application/json'
+    });
+    
+    const requestBody = JSON.stringify(profile);
+    console.log('Request Body:', requestBody);
+    
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: requestBody,
+    });
+    
+    console.log('Response Status:', response.status, response.statusText);
+    console.log('Response Headers:', Object.fromEntries(response.headers.entries()));
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API Error Response Body:', errorText);
+      console.error('API Error Response Details:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText
+      });
+      throw new Error(`Failed to update student profile: ${response.statusText} - ${errorText}`);
+    }
+    
+    const data = await response.json();
+    console.log('Success Response Data:', JSON.stringify(data, null, 2));
+    return data;
+  } catch (error) {
+    console.error('Error updating student profile:', error);
     throw error;
   }
 } 
