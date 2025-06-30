@@ -1,6 +1,4 @@
-const RESTRICTED_CHAT_API = typeof window !== 'undefined' && window.location.hostname === 'localhost'
-  ? '/api' 
-  : 'https://restrictedchat.purplemeadow-b77df452.eastus.azurecontainerapps.io';
+import { RESTRICTED_CHAT_API, API_CONFIG } from '../config/api';
 
 export interface UserInfo {
   UserId: number;
@@ -356,8 +354,7 @@ export function createWebSocketConnection(
   onError: (error: Event) => void,
   onClose: (event: CloseEvent) => void
 ): WebSocket {
-  const baseUrl = 'wss://restrictedchat.purplemeadow-b77df452.eastus.azurecontainerapps.io';
-  const wsUrl = `${baseUrl}/teams/${teamId}/channels/${channelId}/ws`;
+  const wsUrl = `${API_CONFIG.WS_BASE_URL}/teams/${teamId}/channels/${channelId}/ws`;
   console.log('Connecting to WebSocket:', wsUrl);
   
   const ws = new WebSocket(wsUrl);
@@ -379,8 +376,7 @@ export function createWebSocketConnection(
 }
 
 export const getComicStrip = async (comicStripId: number): Promise<ComicStrip> => {
-  const baseUrl = 'https://restrictedchat.purplemeadow-b77df452.eastus.azurecontainerapps.io';
-  const response = await fetch(`${baseUrl}/comic-strips/${comicStripId}`);
+  const response = await fetch(`${RESTRICTED_CHAT_API}/comic-strips/${comicStripId}`);
   if (!response.ok) {
     throw new Error('Failed to fetch comic strip');
   }
@@ -388,8 +384,7 @@ export const getComicStrip = async (comicStripId: number): Promise<ComicStrip> =
 };
 
 export const getUserComicStrips = async (userId: number): Promise<ComicStrip[]> => {
-  const baseUrl = 'https://restrictedchat.purplemeadow-b77df452.eastus.azurecontainerapps.io';
-  const response = await fetch(`${baseUrl}/comic-strips/user/${userId}`);
+  const response = await fetch(`${RESTRICTED_CHAT_API}/comic-strips/user/${userId}`);
   if (!response.ok) {
     throw new Error('Failed to fetch user comic strips');
   }
@@ -397,8 +392,7 @@ export const getUserComicStrips = async (userId: number): Promise<ComicStrip[]> 
 };
 
 export const createComicStrip = async (comicStrip: Omit<ComicStrip, 'ComicStripId'>): Promise<ComicStrip> => {
-  const baseUrl = 'https://restrictedchat.purplemeadow-b77df452.eastus.azurecontainerapps.io';
-  const response = await fetch(`${baseUrl}/comic-strips`, {
+  const response = await fetch(`${RESTRICTED_CHAT_API}/comic-strips`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -412,8 +406,7 @@ export const createComicStrip = async (comicStrip: Omit<ComicStrip, 'ComicStripI
 };
 
 export const updateComicStrip = async (comicStripId: number, comicStrip: Partial<ComicStrip>): Promise<ComicStrip> => {
-  const baseUrl = 'https://restrictedchat.purplemeadow-b77df452.eastus.azurecontainerapps.io';
-  const response = await fetch(`${baseUrl}/comic-strips/${comicStripId}`, {
+  const response = await fetch(`${RESTRICTED_CHAT_API}/comic-strips/${comicStripId}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',

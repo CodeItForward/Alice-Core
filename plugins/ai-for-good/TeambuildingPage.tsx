@@ -11,10 +11,7 @@ import {
   type Team,
   type StudentProfile
 } from '../../core/services/api';
-
-const RESTRICTED_CHAT_API = window.location.hostname === 'localhost' 
-  ? '/api' 
-  : 'https://restrictedchat.purplemeadow-b77df452.eastus.azurecontainerapps.io';
+import { RESTRICTED_CHAT_API } from '../../core/config/api';
 
 interface ProgressItem {
   id: string;
@@ -106,7 +103,7 @@ const progressItems: ProgressItem[] = [
   },
   {
     id: '7',
-    title: 'Mind Map Jam',
+    title: 'Design Thinking',
     type: 'activity',
     status: 'not-started',
     duration: '40 min',

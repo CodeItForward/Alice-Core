@@ -89,7 +89,7 @@ const progressItems: ProgressItem[] = [
   },
   {
     id: '7',
-    title: 'Mind Map Jam',
+    title: 'Design Thinking',
     type: 'activity',
     status: 'not-started',
     duration: '40 min',

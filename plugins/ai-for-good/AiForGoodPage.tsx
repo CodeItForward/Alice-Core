@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../core/context/AuthContext';
 import { getTeamChannels, getChannelMessages, postMessage, createWebSocketConnection, type Channel, type ChatMessage, type WebSocketMessage, getUserTeams, type Team } from '../../core/services/api';
 import { Bot, User as UserIcon, ChevronDown } from 'lucide-react';
+import { API_CONFIG } from '../../core/config/api';
 
-const wsUrl = 'wss://restrictedchat.purplemeadow-b77df452.eastus.azurecontainerapps.io/alice/aiforgood/chat';
+const wsUrl = `${API_CONFIG.WS_BASE_URL}/alice/aiforgood/chat`;
 
 const getYouTubeId = (url: string) => {
   // Handles both youtu.be and youtube.com URLs
