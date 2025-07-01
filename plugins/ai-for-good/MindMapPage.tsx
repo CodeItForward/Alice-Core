@@ -22,6 +22,16 @@ interface ConversationCard {
   isActive: boolean;
 }
 
+interface ProblemCard {
+  id: string;
+  title: string;
+  icon: React.ReactNode;
+  color: string;
+  bgColor: string;
+  responses: string[];
+  isActive: boolean;
+}
+
 const progressItems: ProgressItem[] = [
   {
     id: '1',
@@ -184,9 +194,41 @@ const MindMapPage: React.FC = () => {
       isActive: false
     }
   ]);
+  const [problemCards, setProblemCards] = useState<ProblemCard[]>([
+    {
+      id: 'empathy',
+      title: 'Empathy check in',
+      icon: <Heart size={16} />,
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-100',
+      responses: [],
+      isActive: false
+    },
+    {
+      id: 'help',
+      title: 'How can we help?',
+      icon: <Target size={16} />,
+      color: 'text-indigo-600',
+      bgColor: 'bg-indigo-100',
+      responses: [],
+      isActive: false
+    },
+    {
+      id: 'matter',
+      title: 'Why does that matter?',
+      icon: <Lightbulb size={16} />,
+      color: 'text-orange-600',
+      bgColor: 'bg-orange-100',
+      responses: [],
+      isActive: false
+    }
+  ]);
   const [activeCard, setActiveCard] = useState<string | null>(null);
+  const [activeProblemCard, setActiveProblemCard] = useState<string | null>(null);
   const [currentResponse, setCurrentResponse] = useState('');
+  const [currentProblemResponse, setCurrentProblemResponse] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const problemChatEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   // Auto-scroll to bottom when conversation updates
@@ -194,12 +236,26 @@ const MindMapPage: React.FC = () => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [conversationCards]);
 
+  // Auto-scroll to bottom when problem conversation updates
+  useEffect(() => {
+    problemChatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [problemCards]);
+
   // Automatically select the Design Thinking activity when the page loads
   useEffect(() => {
     const designThinking = progressItems.find(item => item.id === '7');
     if (designThinking) {
       setSelectedItem(designThinking);
     }
+  }, []);
+
+  // Automatically select the "Who are you helping?" card when the page loads
+  useEffect(() => {
+    setActiveCard('who');
+    setConversationCards(prev => prev.map(card => ({
+      ...card,
+      isActive: card.id === 'who'
+    })));
   }, []);
 
   const handleItemClick = (item: ProgressItem) => {
@@ -254,6 +310,33 @@ const MindMapPage: React.FC = () => {
 
   const handleRemoveResponse = (cardId: string, responseIndex: number) => {
     setConversationCards(prev => prev.map(card => 
+      card.id === cardId 
+        ? { ...card, responses: card.responses.filter((_, index) => index !== responseIndex) }
+        : card
+    ));
+  };
+
+  const handleProblemCardClick = (cardId: string) => {
+    setActiveProblemCard(cardId);
+    setProblemCards(prev => prev.map(card => ({
+      ...card,
+      isActive: card.id === cardId
+    })));
+  };
+
+  const handleAddProblemResponse = () => {
+    if (!currentProblemResponse.trim() || !activeProblemCard) return;
+
+    setProblemCards(prev => prev.map(card => 
+      card.id === activeProblemCard 
+        ? { ...card, responses: [...card.responses, currentProblemResponse.trim()] }
+        : card
+    ));
+    setCurrentProblemResponse('');
+  };
+
+  const handleRemoveProblemResponse = (cardId: string, responseIndex: number) => {
+    setProblemCards(prev => prev.map(card => 
       card.id === cardId 
         ? { ...card, responses: card.responses.filter((_, index) => index !== responseIndex) }
         : card
@@ -393,8 +476,8 @@ const MindMapPage: React.FC = () => {
                         );
                       })()}
                       
-                                                {/* Chat Messages */}
-                          <div className="bg-gray-50 rounded-lg p-4 mb-4 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                      {/* Chat Messages */}
+                      <div className="bg-gray-50 rounded-lg p-4 mb-4 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                         <div className="space-y-3">
                           {/* AI Bot Message */}
                           <div className="flex justify-start">
@@ -478,22 +561,142 @@ const MindMapPage: React.FC = () => {
                   )}
                 </div>
 
-                {/* Define Stage */}
+                {/* Problem Statement Generator */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                   <div className="flex items-center mb-4">
                     <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
                       <Target size={16} className="text-purple-600" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-800">2. Define</h3>
+                    <h3 className="text-lg font-semibold text-gray-800">Problem Statement Generator</h3>
                   </div>
                   <p className="text-gray-600 mb-4">
-                    Synthesize your findings to identify the core problem. Create a clear problem statement.
+                    Use these conversation cards to define the core problem you're trying to solve. Build on your persona insights to create a clear problem statement.
                   </p>
-                  <textarea
-                    placeholder="Write your problem statement here..."
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    rows={3}
-                  />
+                  
+                  {/* Problem Conversation Cards */}
+                  <div className="grid grid-cols-3 gap-3 mb-4">
+                    {problemCards.map((card) => (
+                      <button
+                        key={card.id}
+                        onClick={() => handleProblemCardClick(card.id)}
+                        className={`p-4 rounded-lg border-2 transition-all ${
+                          card.isActive 
+                            ? 'border-purple-500 bg-purple-50' 
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className={`w-8 h-8 ${card.bgColor} rounded-full flex items-center justify-center mb-2`}>
+                          <div className={card.color}>{card.icon}</div>
+                        </div>
+                        <h4 className="text-sm font-medium text-gray-800 text-left">{card.title}</h4>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {card.responses.length} responses
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Active Problem Conversation */}
+                  {activeProblemCard && (
+                    <div className="border-t pt-4">
+                      {(() => {
+                        const activeCardData = problemCards.find(c => c.id === activeProblemCard);
+                        if (!activeCardData) return null;
+                        
+                        return (
+                          <div className="flex items-center mb-3">
+                            <div className={`w-6 h-6 ${activeCardData.bgColor} rounded-full flex items-center justify-center mr-2`}>
+                              <div className={activeCardData.color}>{activeCardData.icon}</div>
+                            </div>
+                            <h4 className="font-medium text-gray-800">
+                              {activeCardData.title}
+                            </h4>
+                          </div>
+                        );
+                      })()}
+                      
+                      {/* Problem Chat Messages */}
+                      <div className="bg-gray-50 rounded-lg p-4 mb-4 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                        <div className="space-y-3">
+                          {/* AI Bot Message */}
+                          <div className="flex justify-start">
+                            <div className="flex max-w-[80%] flex-row">
+                              {/* AI Avatar */}
+                              <div className="flex-shrink-0 mr-3">
+                                <div className="h-8 w-8 bg-purple-500 rounded-full flex items-center justify-center">
+                                  <span className="text-white text-xs font-bold">AI</span>
+                                </div>
+                              </div>
+                              {/* AI Message Bubble */}
+                              <div>
+                                <div className="bg-purple-100 border border-purple-200 shadow-sm rounded-2xl px-4 py-3 rounded-tl-none">
+                                  <div className="text-sm text-gray-700">
+                                    {activeProblemCard === 'empathy' && "If they could magically fix one thing in their world, what would it be?"}
+                                    {activeProblemCard === 'help' && "Think about your person or cause. What do they need help with right now? What's the one thing they wish someone could fix?"}
+                                    {activeProblemCard === 'matter' && "Now tell me why that need is important. What could change for the better if that problem got solved?"}
+                                  </div>
+                                </div>
+                                <div className="mt-1 text-xs text-gray-500 text-left">
+                                  AI Assistant · Just now
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* User Problem Responses */}
+                          {(() => {
+                            const activeCardData = problemCards.find(c => c.id === activeProblemCard);
+                            if (!activeCardData || activeCardData.responses.length === 0) return null;
+                            
+                            return activeCardData.responses.map((response, index) => (
+                              <div key={index} className="flex justify-end">
+                                <div className="flex max-w-[80%] flex-row-reverse">
+                                  {/* User Avatar */}
+                                  <div className="flex-shrink-0 ml-3">
+                                    <div className="h-8 w-8 bg-purple-500 rounded-full flex items-center justify-center">
+                                      <span className="text-white text-xs font-bold">You</span>
+                                    </div>
+                                  </div>
+                                  {/* User Message Bubble */}
+                                  <div>
+                                    <div className="bg-purple-600 text-white rounded-2xl px-4 py-3 rounded-tr-none">
+                                      <div className="text-sm">
+                                        {response}
+                                      </div>
+                                    </div>
+                                    <div className="mt-1 text-xs text-gray-500 text-right">
+                                      You · Just now
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ));
+                          })()}
+                          
+                          {/* Auto-scroll anchor */}
+                          <div ref={problemChatEndRef} />
+                        </div>
+                      </div>
+
+                      {/* Problem Response Input */}
+                      <div className="flex space-x-2">
+                        <input
+                          type="text"
+                          value={currentProblemResponse}
+                          onChange={(e) => setCurrentProblemResponse(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && handleAddProblemResponse()}
+                          placeholder="Type your response..."
+                          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        />
+                        <button
+                          onClick={handleAddProblemResponse}
+                          className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition"
+                        >
+                          Send
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Ideate Stage */}
@@ -565,6 +768,47 @@ const MindMapPage: React.FC = () => {
                       <MessageCircle size={32} className="mx-auto" />
                     </div>
                     <p className="text-gray-500">Start conversations with the cards on the left to build your persona</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Problem Statement Summary */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center mb-4">
+                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                    <Target size={16} className="text-purple-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-800">Problem Statement Summary</h3>
+                </div>
+                
+                {problemCards.some(card => card.responses.length > 0) ? (
+                  <div className="space-y-4">
+                    {problemCards.map((card) => (
+                      card.responses.length > 0 && (
+                        <div key={card.id} className="border-l-4 border-purple-200 pl-4">
+                          <div className="flex items-center mb-2">
+                            <div className={`w-6 h-6 ${card.bgColor} rounded-full flex items-center justify-center mr-2`}>
+                              <div className={card.color}>{card.icon}</div>
+                            </div>
+                            <h4 className="font-medium text-gray-800">{card.title}</h4>
+                          </div>
+                          <div className="space-y-1">
+                            {card.responses.map((response, index) => (
+                              <p key={index} className="text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded">
+                                {response}
+                              </p>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="text-gray-400 mb-2">
+                      <Target size={32} className="mx-auto" />
+                    </div>
+                    <p className="text-gray-500">Start problem conversations to define your core challenge</p>
                   </div>
                 )}
               </div>
