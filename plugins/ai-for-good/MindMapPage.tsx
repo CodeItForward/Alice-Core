@@ -1,6 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Video, BookOpen, Activity, CheckCircle, Clock, ArrowRight, ChevronDown, ChevronRight, Lightbulb, Users, Target, Zap, MessageCircle, User, Heart, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../core/context/AuthContext';
+import { 
+  getDesignThinkingChats, 
+  getChannelMessages, 
+  createWebSocketConnection,
+  getUserTeamsByType,
+  postMessage,
+  type DesignThinkingChats,
+  type ChatMessage,
+  type WebSocketMessage,
+  type Team
+} from '../../core/services/api';
 
 interface ProgressItem {
   id: string;
@@ -18,18 +30,11 @@ interface ConversationCard {
   icon: React.ReactNode;
   color: string;
   bgColor: string;
-  responses: string[];
+  teamId: number;
+  channelId: number;
+  messages: ChatMessage[];
   isActive: boolean;
-}
-
-interface ProblemCard {
-  id: string;
-  title: string;
-  icon: React.ReactNode;
-  color: string;
-  bgColor: string;
-  responses: string[];
-  isActive: boolean;
+  isLoading: boolean;
 }
 
 const progressItems: ProgressItem[] = [
@@ -123,6 +128,30 @@ const getStatusIcon = (status: ProgressItem['status']) => {
   }
 };
 
+// Helper function to get a consistent color for a user
+const getUserColor = (userId: number): string => {
+  const colors = [
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD',
+    '#D4A5A5', '#9B59B6', '#3498DB', '#E67E22', '#2ECC71'
+  ];
+  return colors[userId % colors.length];
+};
+
+// Helper function to get user display name
+const getUserDisplayName = (userId: number, displayName?: string): string => {
+  if (userId === 1) return 'Alice';
+  return displayName || `User ${userId}`;
+};
+
+// Helper function to get additional context for each conversation
+const getAdditionalContext = (conversationType: 'persona' | 'problem'): string => {
+  switch (conversationType) {
+    case 'persona': return 'persona_helping';
+    case 'problem': return 'problem_statement_empathy';
+    default: return '';
+  }
+};
+
 const StatusIndicator: React.FC<{ status: ProgressItem['status']; size?: 'sm' | 'md'; className?: string }> = ({ 
   status, 
   size = 'md',
@@ -154,92 +183,245 @@ const StatusIndicator: React.FC<{ status: ProgressItem['status']; size?: 'sm' | 
 };
 
 const MindMapPage: React.FC = () => {
+  const { user } = useAuth();
   const [selectedItem, setSelectedItem] = useState<ProgressItem | null>(null);
   const [isDay1Expanded, setIsDay1Expanded] = useState(true);
-  const [conversationCards, setConversationCards] = useState<ConversationCard[]>([
-    {
-      id: 'who',
-      title: 'Who are you helping?',
-      icon: <User size={16} />,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-100',
-      responses: [],
-      isActive: false
-    },
-    {
-      id: 'hard',
-      title: "What's hard for them?",
-      icon: <Heart size={16} />,
-      color: 'text-red-600',
-      bgColor: 'bg-red-100',
-      responses: [],
-      isActive: false
-    },
-    {
-      id: 'best',
-      title: 'Best day ever?',
-      icon: <Star size={16} />,
-      color: 'text-yellow-600',
-      bgColor: 'bg-yellow-100',
-      responses: [],
-      isActive: false
-    },
-    {
-      id: 'care',
-      title: 'Why do we care?',
-      icon: <MessageCircle size={16} />,
-      color: 'text-green-600',
-      bgColor: 'bg-green-100',
-      responses: [],
-      isActive: false
-    }
-  ]);
-  const [problemCards, setProblemCards] = useState<ProblemCard[]>([
-    {
-      id: 'empathy',
-      title: 'Empathy check in',
-      icon: <Heart size={16} />,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-100',
-      responses: [],
-      isActive: false
-    },
-    {
-      id: 'help',
-      title: 'How can we help?',
-      icon: <Target size={16} />,
-      color: 'text-indigo-600',
-      bgColor: 'bg-indigo-100',
-      responses: [],
-      isActive: false
-    },
-    {
-      id: 'matter',
-      title: 'Why does that matter?',
-      icon: <Lightbulb size={16} />,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-100',
-      responses: [],
-      isActive: false
-    }
-  ]);
-  const [activeCard, setActiveCard] = useState<string | null>(null);
-  const [activeProblemCard, setActiveProblemCard] = useState<string | null>(null);
-  const [currentResponse, setCurrentResponse] = useState('');
-  const [currentProblemResponse, setCurrentProblemResponse] = useState('');
-  const chatEndRef = useRef<HTMLDivElement>(null);
-  const problemChatEndRef = useRef<HTMLDivElement>(null);
+  const [designThinkingChats, setDesignThinkingChats] = useState<DesignThinkingChats | null>(null);
+  const [aiForGoodTeam, setAiForGoodTeam] = useState<Team | null>(null);
+  
+  // Persona conversation
+  const [personaMessages, setPersonaMessages] = useState<ChatMessage[]>([]);
+  const [personaResponse, setPersonaResponse] = useState('');
+  const [personaWsConnected, setPersonaWsConnected] = useState(false);
+  
+  // Problem statement conversation
+  const [problemMessages, setProblemMessages] = useState<ChatMessage[]>([]);
+  const [problemResponse, setProblemResponse] = useState('');
+  const [problemWsConnected, setProblemWsConnected] = useState(false);
+  
+  const [error, setError] = useState<string | null>(null);
+
+  const personaWsRef = useRef<WebSocket | null>(null);
+  const problemWsRef = useRef<WebSocket | null>(null);
   const navigate = useNavigate();
 
-  // Auto-scroll to bottom when conversation updates
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [conversationCards]);
+  // Simple cleanup function for WebSocket
+  const cleanupWebSocket = (wsRef: React.MutableRefObject<WebSocket | null>) => {
+    if (wsRef.current) {
+      wsRef.current.onclose = null;
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+  };
 
-  // Auto-scroll to bottom when problem conversation updates
+  // Load AI For Good team first
   useEffect(() => {
-    problemChatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [problemCards]);
+    const loadAiForGoodTeam = async () => {
+      console.log('Loading AI For Good team, user:', user);
+      if (!user) {
+        console.log('No user found, skipping team load');
+        return;
+      }
+
+      try {
+        console.log('Loading AI For Good teams for user:', user.id, 'type: 4');
+        const fetchedTeams = await getUserTeamsByType(parseInt(user.id), 4);
+        console.log('Loaded AI For Good teams:', fetchedTeams);
+        
+        // Select the team with the highest TeamId (same logic as TeambuildingPage)
+        if (fetchedTeams.length > 0) {
+          const highestTeam = fetchedTeams.reduce((prev, current) => 
+            (prev.TeamId > current.TeamId) ? prev : current
+          );
+          console.log('Selected highest AI For Good team:', highestTeam);
+          setAiForGoodTeam(highestTeam);
+        } else {
+          console.log('No AI For Good teams found for user');
+          setError('No AI For Good teams found for this user');
+        }
+      } catch (error) {
+        console.error('Error loading AI For Good teams:', error);
+        setError('Failed to load AI For Good teams');
+      }
+    };
+
+    loadAiForGoodTeam();
+  }, [user]);
+
+  // Load design thinking chats when AI For Good team is available
+  useEffect(() => {
+    const loadDesignThinkingChats = async () => {
+      console.log('Loading design thinking chats, user:', user, 'team:', aiForGoodTeam);
+      if (!user || !aiForGoodTeam) {
+        console.log('No user or team found, skipping API call');
+        return;
+      }
+
+      try {
+        console.log('Calling getDesignThinkingChats with teamId:', aiForGoodTeam.TeamId, 'userId:', parseInt(user.id));
+        const chats = await getDesignThinkingChats(aiForGoodTeam.TeamId, parseInt(user.id));
+        console.log('Received chats:', chats);
+        setDesignThinkingChats(chats);
+      } catch (error) {
+        console.error('Error loading design thinking chats:', error);
+        setError('Failed to load design thinking chats');
+      }
+    };
+
+    loadDesignThinkingChats();
+  }, [user, aiForGoodTeam]);
+
+  // Setup Persona WebSocket connection
+  useEffect(() => {
+    if (!user || !aiForGoodTeam || !designThinkingChats) return;
+
+    const setupPersonaWebSocket = () => {
+      cleanupWebSocket(personaWsRef);
+      
+      console.log('Setting up Persona WebSocket with teamId:', designThinkingChats.PersonaHelping, 'channelId:', designThinkingChats.PersonaHelping);
+      
+      const ws = createWebSocketConnection(
+        designThinkingChats.PersonaHelping,
+        designThinkingChats.PersonaHelping,
+        (data: WebSocketMessage) => {
+          setPersonaWsConnected(true);
+          setError(null);
+          
+          if (data.content && data.user_id && data.created_at) {
+            const newMessage: ChatMessage = {
+              MessageId: data.message_id || Date.now(),
+              ChannelId: designThinkingChats.PersonaHelping,
+              UserId: data.user_id,
+              Text: data.content,
+              Timestamp: data.created_at,
+              ReplyToMessageId: data.reply_to_message_id || null,
+              user: {
+                UserId: data.user_id,
+                DisplayName: data.display_name || `User ${data.user_id}`,
+                Email: ''
+              },
+              type: data.type || 'text',
+              video_url: data.video_url || undefined,
+              image_url: data.image_url || undefined
+            };
+
+            setPersonaMessages(prev => [...prev, newMessage]);
+          }
+        },
+        (error) => {
+          console.error('Persona WebSocket error:', error);
+          setPersonaWsConnected(false);
+          setError('Persona connection error occurred');
+        },
+        (event) => {
+          setPersonaWsConnected(false);
+          if (event.code !== 1000) {
+            setError('Persona connection lost. Messages will be sent via REST API.');
+          }
+        }
+      );
+
+      personaWsRef.current = ws;
+
+      // Send user_id and additional context immediately after connection
+      ws.onopen = () => {
+        console.log('Persona WebSocket connected, sending user_id and additional context');
+        const additionalContext = getAdditionalContext('persona');
+        
+        const joinMessage = {
+          user_id: parseInt(user.id),
+          additional_context: [additionalContext]
+        };
+        ws.send(JSON.stringify(joinMessage));
+        console.log('=== PERSONA WEBSOCKET JOIN MESSAGE SENT ===');
+        console.log('Additional Context:', additionalContext);
+        console.log('Join Message JSON:', JSON.stringify(joinMessage, null, 2));
+        console.log('===========================================');
+      };
+    };
+
+    setupPersonaWebSocket();
+
+    return () => {
+      cleanupWebSocket(personaWsRef);
+    };
+  }, [user, aiForGoodTeam, designThinkingChats]);
+
+  // Setup Problem WebSocket connection
+  useEffect(() => {
+    if (!user || !aiForGoodTeam || !designThinkingChats) return;
+
+    const setupProblemWebSocket = () => {
+      cleanupWebSocket(problemWsRef);
+      
+      console.log('Setting up Problem WebSocket with teamId:', designThinkingChats.ProblemStatementEmpathy, 'channelId:', designThinkingChats.ProblemStatementEmpathy);
+      
+      const ws = createWebSocketConnection(
+        designThinkingChats.ProblemStatementEmpathy,
+        designThinkingChats.ProblemStatementEmpathy,
+        (data: WebSocketMessage) => {
+          setProblemWsConnected(true);
+          setError(null);
+          
+          if (data.content && data.user_id && data.created_at) {
+            const newMessage: ChatMessage = {
+              MessageId: data.message_id || Date.now(),
+              ChannelId: designThinkingChats.ProblemStatementEmpathy,
+              UserId: data.user_id,
+              Text: data.content,
+              Timestamp: data.created_at,
+              ReplyToMessageId: data.reply_to_message_id || null,
+              user: {
+                UserId: data.user_id,
+                DisplayName: data.display_name || `User ${data.user_id}`,
+                Email: ''
+              },
+              type: data.type || 'text',
+              video_url: data.video_url || undefined,
+              image_url: data.image_url || undefined
+            };
+
+            setProblemMessages(prev => [...prev, newMessage]);
+          }
+        },
+        (error) => {
+          console.error('Problem WebSocket error:', error);
+          setProblemWsConnected(false);
+          setError('Problem connection error occurred');
+        },
+        (event) => {
+          setProblemWsConnected(false);
+          if (event.code !== 1000) {
+            setError('Problem connection lost. Messages will be sent via REST API.');
+          }
+        }
+      );
+
+      problemWsRef.current = ws;
+
+      // Send user_id and additional context immediately after connection
+      ws.onopen = () => {
+        console.log('Problem WebSocket connected, sending user_id and additional context');
+        const additionalContext = getAdditionalContext('problem');
+        
+        const joinMessage = {
+          user_id: parseInt(user.id),
+          additional_context: [additionalContext]
+        };
+        ws.send(JSON.stringify(joinMessage));
+        console.log('=== PROBLEM WEBSOCKET JOIN MESSAGE SENT ===');
+        console.log('Additional Context:', additionalContext);
+        console.log('Join Message JSON:', JSON.stringify(joinMessage, null, 2));
+        console.log('===========================================');
+      };
+    };
+
+    setupProblemWebSocket();
+
+    return () => {
+      cleanupWebSocket(problemWsRef);
+    };
+  }, [user, aiForGoodTeam, designThinkingChats]);
 
   // Automatically select the Design Thinking activity when the page loads
   useEffect(() => {
@@ -247,15 +429,6 @@ const MindMapPage: React.FC = () => {
     if (designThinking) {
       setSelectedItem(designThinking);
     }
-  }, []);
-
-  // Automatically select the "Who are you helping?" card when the page loads
-  useEffect(() => {
-    setActiveCard('who');
-    setConversationCards(prev => prev.map(card => ({
-      ...card,
-      isActive: card.id === 'who'
-    })));
   }, []);
 
   const handleItemClick = (item: ProgressItem) => {
@@ -289,58 +462,118 @@ const MindMapPage: React.FC = () => {
     };
   };
 
-  const handleCardClick = (cardId: string) => {
-    setActiveCard(cardId);
-    setConversationCards(prev => prev.map(card => ({
-      ...card,
-      isActive: card.id === cardId
-    })));
+  const handlePersonaResponse = async () => {
+    if (!personaResponse.trim() || !user || !designThinkingChats) return;
+
+    const messageText = personaResponse.trim();
+    setPersonaResponse('');
+
+    try {
+      if (personaWsRef.current && personaWsRef.current.readyState === WebSocket.OPEN && personaWsConnected) {
+        const message = {
+          type: 'message',
+          content: messageText,
+          video_url: null,
+          image_url: null,
+          user_id: parseInt(user.id),
+          reply_to_message_id: null
+        };
+
+        console.log('=== PERSONA MESSAGE SENT ===');
+        console.log('Message JSON:', JSON.stringify(message, null, 2));
+        console.log('============================');
+        personaWsRef.current.send(JSON.stringify(message));
+      } else {
+        // Fallback to REST API
+        console.log('Persona WebSocket not available, using REST API fallback');
+        const response = await postMessage(
+          designThinkingChats.PersonaHelping, 
+          designThinkingChats.PersonaHelping, 
+          parseInt(user.id), 
+          messageText, 
+          null, 
+          []
+        );
+        console.log('Sent persona message via REST API:', response);
+        
+        // Add message to local state
+        const newMessage: ChatMessage = {
+          MessageId: response.message_id,
+          ChannelId: designThinkingChats.PersonaHelping,
+          UserId: parseInt(user.id),
+          Text: messageText,
+          Timestamp: new Date().toISOString(),
+          ReplyToMessageId: null,
+          user: {
+            UserId: parseInt(user.id),
+            DisplayName: user.displayName || 'You',
+            Email: user.email || ''
+          }
+        };
+
+        setPersonaMessages(prev => [...prev, newMessage]);
+      }
+    } catch (error) {
+      console.error('Error sending persona message:', error);
+      setError('Failed to send persona message');
+    }
   };
 
-  const handleAddResponse = () => {
-    if (!currentResponse.trim() || !activeCard) return;
+  const handleProblemResponse = async () => {
+    if (!problemResponse.trim() || !user || !designThinkingChats) return;
 
-    setConversationCards(prev => prev.map(card => 
-      card.id === activeCard 
-        ? { ...card, responses: [...card.responses, currentResponse.trim()] }
-        : card
-    ));
-    setCurrentResponse('');
-  };
+    const messageText = problemResponse.trim();
+    setProblemResponse('');
 
-  const handleRemoveResponse = (cardId: string, responseIndex: number) => {
-    setConversationCards(prev => prev.map(card => 
-      card.id === cardId 
-        ? { ...card, responses: card.responses.filter((_, index) => index !== responseIndex) }
-        : card
-    ));
-  };
+    try {
+      if (problemWsRef.current && problemWsRef.current.readyState === WebSocket.OPEN && problemWsConnected) {
+        const message = {
+          type: 'message',
+          content: messageText,
+          video_url: null,
+          image_url: null,
+          user_id: parseInt(user.id),
+          reply_to_message_id: null
+        };
 
-  const handleProblemCardClick = (cardId: string) => {
-    setActiveProblemCard(cardId);
-    setProblemCards(prev => prev.map(card => ({
-      ...card,
-      isActive: card.id === cardId
-    })));
-  };
+        console.log('=== PROBLEM MESSAGE SENT ===');
+        console.log('Message JSON:', JSON.stringify(message, null, 2));
+        console.log('============================');
+        problemWsRef.current.send(JSON.stringify(message));
+      } else {
+        // Fallback to REST API
+        console.log('Problem WebSocket not available, using REST API fallback');
+        const response = await postMessage(
+          designThinkingChats.ProblemStatementEmpathy, 
+          designThinkingChats.ProblemStatementEmpathy, 
+          parseInt(user.id), 
+          messageText, 
+          null, 
+          []
+        );
+        console.log('Sent problem message via REST API:', response);
+        
+        // Add message to local state
+        const newMessage: ChatMessage = {
+          MessageId: response.message_id,
+          ChannelId: designThinkingChats.ProblemStatementEmpathy,
+          UserId: parseInt(user.id),
+          Text: messageText,
+          Timestamp: new Date().toISOString(),
+          ReplyToMessageId: null,
+          user: {
+            UserId: parseInt(user.id),
+            DisplayName: user.displayName || 'You',
+            Email: user.email || ''
+          }
+        };
 
-  const handleAddProblemResponse = () => {
-    if (!currentProblemResponse.trim() || !activeProblemCard) return;
-
-    setProblemCards(prev => prev.map(card => 
-      card.id === activeProblemCard 
-        ? { ...card, responses: [...card.responses, currentProblemResponse.trim()] }
-        : card
-    ));
-    setCurrentProblemResponse('');
-  };
-
-  const handleRemoveProblemResponse = (cardId: string, responseIndex: number) => {
-    setProblemCards(prev => prev.map(card => 
-      card.id === cardId 
-        ? { ...card, responses: card.responses.filter((_, index) => index !== responseIndex) }
-        : card
-    ));
+        setProblemMessages(prev => [...prev, newMessage]);
+      }
+    } catch (error) {
+      console.error('Error sending problem message:', error);
+      setError('Failed to send problem message');
+    }
   };
 
   const nextButtonState = getNextButtonState();
@@ -418,11 +651,11 @@ const MindMapPage: React.FC = () => {
 
         {/* Main Content Area */}
         <div className="flex-1 flex overflow-hidden">
-          {/* Left Side - Persona Builder & Design Thinking Process */}
-          <div className="w-1/2 border-r border-gray-200 flex flex-col">
+          {/* Single Panel - Persona Builder & Design Thinking Process */}
+          <div className="w-full flex flex-col">
             <div className="flex-1 overflow-y-auto p-6">
               <div className="space-y-6">
-                {/* Persona Builder */}
+                {/* Persona Builder Conversation */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                   <div className="flex items-center mb-4">
                     <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
@@ -431,402 +664,171 @@ const MindMapPage: React.FC = () => {
                     <h3 className="text-lg font-semibold text-gray-800">Persona Builder</h3>
                   </div>
                   <p className="text-gray-600 mb-4">
-                    Use these conversation cards to build empathy and understand your users better. Click on each card to start a conversation.
+                    Build empathy and understand your users better. Chat with AI to explore who you're helping and their needs.
                   </p>
                   
-                  {/* Conversation Cards */}
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    {conversationCards.map((card) => (
-                      <button
-                        key={card.id}
-                        onClick={() => handleCardClick(card.id)}
-                        className={`p-4 rounded-lg border-2 transition-all ${
-                          card.isActive 
-                            ? 'border-blue-500 bg-blue-50' 
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className={`w-8 h-8 ${card.bgColor} rounded-full flex items-center justify-center mb-2`}>
-                          <div className={card.color}>{card.icon}</div>
-                        </div>
-                        <h4 className="text-sm font-medium text-gray-800 text-left">{card.title}</h4>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {card.responses.length} responses
-                        </p>
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Active Conversation */}
-                  {activeCard && (
-                    <div className="border-t pt-4">
-                      {(() => {
-                        const activeCardData = conversationCards.find(c => c.id === activeCard);
-                        if (!activeCardData) return null;
+                  {/* Chat Messages */}
+                  <div className="bg-gray-50 rounded-lg p-4 mb-4 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                    <div className="space-y-3">
+                      {personaMessages.map((message, index) => {
+                        const isCurrentUser = user && message.UserId === parseInt(user.id);
+                        const userColor = getUserColor(message.UserId);
+                        const displayName = getUserDisplayName(message.UserId, message.user?.DisplayName);
                         
                         return (
-                          <div className="flex items-center mb-3">
-                            <div className={`w-6 h-6 ${activeCardData.bgColor} rounded-full flex items-center justify-center mr-2`}>
-                              <div className={activeCardData.color}>{activeCardData.icon}</div>
+                          <div key={index} className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`flex max-w-[80%] ${isCurrentUser ? 'flex-row-reverse' : 'flex-row'}`}>
+                              {/* User Avatar */}
+                              <div className={`flex-shrink-0 ${isCurrentUser ? 'ml-3' : 'mr-3'}`}>
+                                <div 
+                                  className="h-8 w-8 rounded-full flex items-center justify-center"
+                                  style={{ backgroundColor: userColor }}
+                                >
+                                  <span className="text-white text-xs font-bold">
+                                    {displayName.charAt(0).toUpperCase()}
+                                  </span>
+                                </div>
+                              </div>
+                              {/* User Message Bubble */}
+                              <div>
+                                <div 
+                                  className={`rounded-2xl px-4 py-3 ${isCurrentUser ? 'rounded-tr-none' : 'rounded-tl-none'}`}
+                                  style={{ 
+                                    backgroundColor: isCurrentUser ? userColor : '#f3f4f6',
+                                    color: isCurrentUser ? 'white' : '#374151'
+                                  }}
+                                >
+                                  <div className="text-sm">
+                                    {message.Text}
+                                  </div>
+                                  {/* If image, show image */}
+                                  {message.type === 'image' && message.image_url && (
+                                    <div className="mt-2">
+                                      <img 
+                                        src={message.image_url} 
+                                        alt="Shared image" 
+                                        className="max-w-full rounded-lg shadow-sm"
+                                        style={{ maxHeight: '400px' }}
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                                <div className={`mt-1 text-xs text-gray-500 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
+                                  {displayName} · {new Date(message.Timestamp).toLocaleTimeString()}
+                                </div>
+                              </div>
                             </div>
-                            <h4 className="font-medium text-gray-800">
-                              {activeCardData.title}
-                            </h4>
                           </div>
                         );
-                      })()}
-                      
-                      {/* Chat Messages */}
-                      <div className="bg-gray-50 rounded-lg p-4 mb-4 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                        <div className="space-y-3">
-                          {/* AI Bot Message */}
-                          <div className="flex justify-start">
-                            <div className="flex max-w-[80%] flex-row">
-                              {/* AI Avatar */}
-                              <div className="flex-shrink-0 mr-3">
-                                <div className="h-8 w-8 bg-blue-500 rounded-full flex items-center justify-center">
-                                  <span className="text-white text-xs font-bold">AI</span>
-                                </div>
-                              </div>
-                              {/* AI Message Bubble */}
-                              <div>
-                                <div className="bg-blue-100 border border-blue-200 shadow-sm rounded-2xl px-4 py-3 rounded-tl-none">
-                                  <div className="text-sm text-gray-700">
-                                    {activeCard === 'who' && "Tell me about the person you're trying to help. What's their role, background, or situation?"}
-                                    {activeCard === 'hard' && "What challenges or frustrations does this person face? What makes their life difficult?"}
-                                    {activeCard === 'best' && "Describe their ideal day or perfect experience. What would make them really happy?"}
-                                    {activeCard === 'care' && "Why is solving this person's problem important? What impact would it have?"}
-                                  </div>
-                                </div>
-                                <div className="mt-1 text-xs text-gray-500 text-left">
-                                  AI Assistant · Just now
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* User Responses */}
-                          {(() => {
-                            const activeCardData = conversationCards.find(c => c.id === activeCard);
-                            if (!activeCardData || activeCardData.responses.length === 0) return null;
-                            
-                            return activeCardData.responses.map((response, index) => (
-                              <div key={index} className="flex justify-end">
-                                <div className="flex max-w-[80%] flex-row-reverse">
-                                  {/* User Avatar */}
-                                  <div className="flex-shrink-0 ml-3">
-                                    <div className="h-8 w-8 bg-purple-500 rounded-full flex items-center justify-center">
-                                      <span className="text-white text-xs font-bold">You</span>
-                                    </div>
-                                  </div>
-                                  {/* User Message Bubble */}
-                                  <div>
-                                    <div className="bg-purple-600 text-white rounded-2xl px-4 py-3 rounded-tr-none">
-                                      <div className="text-sm">
-                                        {response}
-                                      </div>
-                                    </div>
-                                    <div className="mt-1 text-xs text-gray-500 text-right">
-                                      You · Just now
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            ));
-                          })()}
-
-                          {/* Auto-scroll anchor */}
-                          <div ref={chatEndRef} />
-                        </div>
-                      </div>
-
-                      {/* Response Input */}
-                      <div className="flex space-x-2">
-                        <input
-                          type="text"
-                          value={currentResponse}
-                          onChange={(e) => setCurrentResponse(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && handleAddResponse()}
-                          placeholder="Type your response..."
-                          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <button
-                          onClick={handleAddResponse}
-                          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-                        >
-                          Send
-                        </button>
-                      </div>
+                      })}
                     </div>
-                  )}
+                  </div>
+
+                  {/* Response Input */}
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      value={personaResponse}
+                      onChange={(e) => setPersonaResponse(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handlePersonaResponse()}
+                      placeholder="Type your response..."
+                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      onClick={handlePersonaResponse}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                    >
+                      Send
+                    </button>
+                  </div>
                 </div>
 
-                {/* Problem Statement Generator */}
+                {/* Problem Statement Generation */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                   <div className="flex items-center mb-4">
-                    <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
-                      <Target size={16} className="text-purple-600" />
+                    <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mr-3">
+                      <Target size={16} className="text-red-600" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-800">Problem Statement Generator</h3>
+                    <h3 className="text-lg font-semibold text-gray-800">Problem Statement Generation</h3>
                   </div>
                   <p className="text-gray-600 mb-4">
-                    Use these conversation cards to define the core problem you're trying to solve. Build on your persona insights to create a clear problem statement.
+                    Based on your persona insights, define the core problem you're trying to solve. Be specific and empathetic.
                   </p>
                   
-                  {/* Problem Conversation Cards */}
-                  <div className="grid grid-cols-3 gap-3 mb-4">
-                    {problemCards.map((card) => (
-                      <button
-                        key={card.id}
-                        onClick={() => handleProblemCardClick(card.id)}
-                        className={`p-4 rounded-lg border-2 transition-all ${
-                          card.isActive 
-                            ? 'border-purple-500 bg-purple-50' 
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className={`w-8 h-8 ${card.bgColor} rounded-full flex items-center justify-center mb-2`}>
-                          <div className={card.color}>{card.icon}</div>
-                        </div>
-                        <h4 className="text-sm font-medium text-gray-800 text-left">{card.title}</h4>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {card.responses.length} responses
-                        </p>
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Active Problem Conversation */}
-                  {activeProblemCard && (
-                    <div className="border-t pt-4">
-                      {(() => {
-                        const activeCardData = problemCards.find(c => c.id === activeProblemCard);
-                        if (!activeCardData) return null;
+                  {/* Chat Messages */}
+                  <div className="bg-gray-50 rounded-lg p-4 mb-4 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                    <div className="space-y-3">
+                      {problemMessages.map((message, index) => {
+                        const isCurrentUser = user && message.UserId === parseInt(user.id);
+                        const userColor = getUserColor(message.UserId);
+                        const displayName = getUserDisplayName(message.UserId, message.user?.DisplayName);
                         
                         return (
-                          <div className="flex items-center mb-3">
-                            <div className={`w-6 h-6 ${activeCardData.bgColor} rounded-full flex items-center justify-center mr-2`}>
-                              <div className={activeCardData.color}>{activeCardData.icon}</div>
+                          <div key={index} className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`flex max-w-[80%] ${isCurrentUser ? 'flex-row-reverse' : 'flex-row'}`}>
+                              {/* User Avatar */}
+                              <div className={`flex-shrink-0 ${isCurrentUser ? 'ml-3' : 'mr-3'}`}>
+                                <div 
+                                  className="h-8 w-8 rounded-full flex items-center justify-center"
+                                  style={{ backgroundColor: userColor }}
+                                >
+                                  <span className="text-white text-xs font-bold">
+                                    {displayName.charAt(0).toUpperCase()}
+                                  </span>
+                                </div>
+                              </div>
+                              {/* User Message Bubble */}
+                              <div>
+                                <div 
+                                  className={`rounded-2xl px-4 py-3 ${isCurrentUser ? 'rounded-tr-none' : 'rounded-tl-none'}`}
+                                  style={{ 
+                                    backgroundColor: isCurrentUser ? userColor : '#f3f4f6',
+                                    color: isCurrentUser ? 'white' : '#374151'
+                                  }}
+                                >
+                                  <div className="text-sm">
+                                    {message.Text}
+                                  </div>
+                                  {/* If image, show image */}
+                                  {message.type === 'image' && message.image_url && (
+                                    <div className="mt-2">
+                                      <img 
+                                        src={message.image_url} 
+                                        alt="Shared image" 
+                                        className="max-w-full rounded-lg shadow-sm"
+                                        style={{ maxHeight: '400px' }}
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                                <div className={`mt-1 text-xs text-gray-500 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
+                                  {displayName} · {new Date(message.Timestamp).toLocaleTimeString()}
+                                </div>
+                              </div>
                             </div>
-                            <h4 className="font-medium text-gray-800">
-                              {activeCardData.title}
-                            </h4>
                           </div>
                         );
-                      })()}
-                      
-                      {/* Problem Chat Messages */}
-                      <div className="bg-gray-50 rounded-lg p-4 mb-4 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                        <div className="space-y-3">
-                          {/* AI Bot Message */}
-                          <div className="flex justify-start">
-                            <div className="flex max-w-[80%] flex-row">
-                              {/* AI Avatar */}
-                              <div className="flex-shrink-0 mr-3">
-                                <div className="h-8 w-8 bg-purple-500 rounded-full flex items-center justify-center">
-                                  <span className="text-white text-xs font-bold">AI</span>
-                                </div>
-                              </div>
-                              {/* AI Message Bubble */}
-                              <div>
-                                <div className="bg-purple-100 border border-purple-200 shadow-sm rounded-2xl px-4 py-3 rounded-tl-none">
-                                  <div className="text-sm text-gray-700">
-                                    {activeProblemCard === 'empathy' && "If they could magically fix one thing in their world, what would it be?"}
-                                    {activeProblemCard === 'help' && "Think about your person or cause. What do they need help with right now? What's the one thing they wish someone could fix?"}
-                                    {activeProblemCard === 'matter' && "Now tell me why that need is important. What could change for the better if that problem got solved?"}
-                                  </div>
-                                </div>
-                                <div className="mt-1 text-xs text-gray-500 text-left">
-                                  AI Assistant · Just now
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* User Problem Responses */}
-                          {(() => {
-                            const activeCardData = problemCards.find(c => c.id === activeProblemCard);
-                            if (!activeCardData || activeCardData.responses.length === 0) return null;
-                            
-                            return activeCardData.responses.map((response, index) => (
-                              <div key={index} className="flex justify-end">
-                                <div className="flex max-w-[80%] flex-row-reverse">
-                                  {/* User Avatar */}
-                                  <div className="flex-shrink-0 ml-3">
-                                    <div className="h-8 w-8 bg-purple-500 rounded-full flex items-center justify-center">
-                                      <span className="text-white text-xs font-bold">You</span>
-                                    </div>
-                                  </div>
-                                  {/* User Message Bubble */}
-                                  <div>
-                                    <div className="bg-purple-600 text-white rounded-2xl px-4 py-3 rounded-tr-none">
-                                      <div className="text-sm">
-                                        {response}
-                                      </div>
-                                    </div>
-                                    <div className="mt-1 text-xs text-gray-500 text-right">
-                                      You · Just now
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            ));
-                          })()}
-                          
-                          {/* Auto-scroll anchor */}
-                          <div ref={problemChatEndRef} />
-                        </div>
-                      </div>
-
-                      {/* Problem Response Input */}
-                      <div className="flex space-x-2">
-                        <input
-                          type="text"
-                          value={currentProblemResponse}
-                          onChange={(e) => setCurrentProblemResponse(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && handleAddProblemResponse()}
-                          placeholder="Type your response..."
-                          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        />
-                        <button
-                          onClick={handleAddProblemResponse}
-                          className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition"
-                        >
-                          Send
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Ideate Stage */}
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <div className="flex items-center mb-4">
-                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
-                      <Lightbulb size={16} className="text-green-600" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-800">3. Ideate</h3>
-                  </div>
-                  <p className="text-gray-600 mb-4">
-                    Generate a wide range of creative solutions. Don't limit yourself - quantity over quality at this stage.
-                  </p>
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <input type="text" placeholder="Add an idea..." className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500" />
-                      <button className="bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition text-sm">
-                        Add
-                      </button>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded">Brainstorm with your team</div>
-                      <div className="text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded">Use mind mapping techniques</div>
-                      <div className="text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded">Consider wild and crazy ideas</div>
+                      })}
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>
-          </div>
 
-          {/* Right Side - Persona Summary */}
-          <div className="w-1/2 p-6 overflow-y-auto">
-            <div className="space-y-6">
-              {/* Persona Summary */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center mb-4">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                    <User size={16} className="text-blue-600" />
+                  {/* Response Input */}
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      value={problemResponse}
+                      onChange={(e) => setProblemResponse(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleProblemResponse()}
+                      placeholder="Type your response..."
+                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    />
+                    <button
+                      onClick={handleProblemResponse}
+                      className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
+                    >
+                      Send
+                    </button>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-800">Your Persona Summary</h3>
-                </div>
-                
-                {conversationCards.some(card => card.responses.length > 0) ? (
-                  <div className="space-y-4">
-                    {conversationCards.map((card) => (
-                      card.responses.length > 0 && (
-                        <div key={card.id} className="border-l-4 border-blue-200 pl-4">
-                          <div className="flex items-center mb-2">
-                            <div className={`w-6 h-6 ${card.bgColor} rounded-full flex items-center justify-center mr-2`}>
-                              <div className={card.color}>{card.icon}</div>
-                            </div>
-                            <h4 className="font-medium text-gray-800">{card.title}</h4>
-                          </div>
-                          <div className="space-y-1">
-                            {card.responses.map((response, index) => (
-                              <p key={index} className="text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded">
-                                {response}
-                              </p>
-                            ))}
-                          </div>
-                        </div>
-                      )
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <div className="text-gray-400 mb-2">
-                      <MessageCircle size={32} className="mx-auto" />
-                    </div>
-                    <p className="text-gray-500">Start conversations with the cards on the left to build your persona</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Problem Statement Summary */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center mb-4">
-                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
-                    <Target size={16} className="text-purple-600" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-800">Problem Statement Summary</h3>
-                </div>
-                
-                {problemCards.some(card => card.responses.length > 0) ? (
-                  <div className="space-y-4">
-                    {problemCards.map((card) => (
-                      card.responses.length > 0 && (
-                        <div key={card.id} className="border-l-4 border-purple-200 pl-4">
-                          <div className="flex items-center mb-2">
-                            <div className={`w-6 h-6 ${card.bgColor} rounded-full flex items-center justify-center mr-2`}>
-                              <div className={card.color}>{card.icon}</div>
-                            </div>
-                            <h4 className="font-medium text-gray-800">{card.title}</h4>
-                          </div>
-                          <div className="space-y-1">
-                            {card.responses.map((response, index) => (
-                              <p key={index} className="text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded">
-                                {response}
-                              </p>
-                            ))}
-                          </div>
-                        </div>
-                      )
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <div className="text-gray-400 mb-2">
-                      <Target size={32} className="mx-auto" />
-                    </div>
-                    <p className="text-gray-500">Start problem conversations to define your core challenge</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Next Steps */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="font-semibold text-purple-800 mb-2">Next Steps</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Current Stage</span>
-                    <span className="font-semibold text-blue-600">Persona Building</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-blue-500 h-2 rounded-full transition-all duration-300" style={{ width: '20%' }}></div>
-                  </div>
-                  <p className="text-sm text-gray-500 mt-2">
-                    Complete your persona to move forward with problem definition and ideation.
-                  </p>
                 </div>
               </div>
             </div>

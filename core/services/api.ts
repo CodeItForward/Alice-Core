@@ -117,6 +117,7 @@ export interface WebSocketMessage {
   image_url?: string;
   display_name?: string;
   temp_id?: number;
+  additional_context?: string[];
 }
 
 export interface ComicStrip {
@@ -130,6 +131,16 @@ export interface ComicStrip {
   Panel3Caption: string;
   Panel4Image: string;
   Panel4Caption: string;
+}
+
+export interface DesignThinkingChats {
+  PersonaHelping: number;
+  PersonaChallenge: number;
+  PersonaBestDay: number;
+  PersonaWhyHelp: number;
+  ProblemStatementEmpathy: number;
+  ProblemStatementHowHelp: number;
+  ProblemStatementWhy: number;
 }
 
 export interface ImageUploadResponse {
@@ -321,22 +332,46 @@ export async function postMessage(
   channelId: number,
   userId: number,
   text: string,
-  replyToMessageId: number | null = null
+  replyToMessageId: number | null = null,
+  additionalContext: string[] = []
 ): Promise<PostMessageResponse> {
   try {
-    const response = await fetch(
-      `${RESTRICTED_CHAT_API}/teams/${teamId}/channels/${channelId}/messages?user_id=${userId}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text,
-          reply_to_message_id: replyToMessageId,
-        }),
-      }
-    );
+    // Build query parameters
+    const params = new URLSearchParams({
+      user_id: userId.toString()
+    });
+    
+    // Add additional_context if provided
+    if (additionalContext.length > 0) {
+      additionalContext.forEach(context => {
+        params.append('additional_context', context);
+      });
+    }
+    
+    const requestBody = {
+      text,
+      reply_to_message_id: replyToMessageId,
+    };
+    
+    const url = `${RESTRICTED_CHAT_API}/teams/${teamId}/channels/${channelId}/messages?${params.toString()}`;
+    
+    console.log('=== POST MESSAGE API CALL ===');
+    console.log('URL:', url);
+    console.log('Method: POST');
+    console.log('Headers:', {
+      'Content-Type': 'application/json'
+    });
+    console.log('Query Parameters:', Object.fromEntries(params.entries()));
+    console.log('Request Body:', JSON.stringify(requestBody, null, 2));
+    console.log('=============================');
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
     if (!response.ok) {
       throw new Error(`Failed to post message: ${response.statusText}`);
     }
@@ -659,6 +694,38 @@ export async function updateStudentProfile(profileId: number, profile: StudentPr
     return data;
   } catch (error) {
     console.error('Error updating student profile:', error);
+    throw error;
+  }
+}
+
+export async function getDesignThinkingChats(teamId: number, userId: number): Promise<DesignThinkingChats> {
+  try {
+    console.log('Fetching design thinking chats for team:', teamId, 'user:', userId);
+    const url = `${RESTRICTED_CHAT_API}/teams/${teamId}/design-thinking-chats?user_id=${userId}`;
+    console.log('API URL:', url);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API Error Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText
+      });
+      throw new Error(`Failed to fetch design thinking chats: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+    
+    const data = await response.json();
+    console.log('Successfully fetched design thinking chats:', data);
+    return data;
+  } catch (error) {
+    console.error('Error fetching design thinking chats:', error);
     throw error;
   }
 } 

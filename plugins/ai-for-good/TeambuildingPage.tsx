@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Video, BookOpen, Activity, CheckCircle, Clock, ArrowRight, ChevronDown, ChevronRight, Save, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../core/context/AuthContext';
@@ -188,6 +188,7 @@ const TeambuildingPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const analysisSectionRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState<TeambuildingForm>({
     firstName: '',
@@ -469,6 +470,16 @@ const TeambuildingPage: React.FC = () => {
       
       setAnalysisResults(results);
       setShowAnalysis(true);
+      
+      // Scroll to analysis section after a short delay to ensure it's rendered
+      setTimeout(() => {
+        if (analysisSectionRef.current) {
+          analysisSectionRef.current.scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      }, 100);
     } catch (err) {
       console.error('Error analyzing team:', err);
       setError('Failed to analyze team. Please try again.');
@@ -1046,7 +1057,7 @@ const TeambuildingPage: React.FC = () => {
 
             {/* Analysis Results */}
             {!isLoading && showAnalysis && analysisResults && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+              <div ref={analysisSectionRef} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center">
                     <Activity className="text-blue-600 mr-3" size={24} />
@@ -1054,7 +1065,18 @@ const TeambuildingPage: React.FC = () => {
                   </div>
                   <div className="flex items-center space-x-3">
                     <button
-                      onClick={analyzeTeam}
+                      onClick={() => {
+                        analyzeTeam();
+                        // Scroll to top of analysis section when re-analyzing
+                        setTimeout(() => {
+                          if (analysisSectionRef.current) {
+                            analysisSectionRef.current.scrollIntoView({ 
+                              behavior: 'smooth',
+                              block: 'start'
+                            });
+                          }
+                        }, 100);
+                      }}
                       disabled={isAnalyzing}
                       className={`flex items-center px-4 py-2 rounded-lg ${
                         isAnalyzing
