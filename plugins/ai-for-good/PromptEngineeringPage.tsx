@@ -78,7 +78,7 @@ const progressItems: ProgressItem[] = [
   },
   {
     id: 'ai-ethics',
-    title: 'Take Home: AI Ethics',
+    title: 'Take Home: AI Safety',
     type: 'reading',
     status: 'not-started',
     duration: '15 min',

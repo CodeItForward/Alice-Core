@@ -98,7 +98,7 @@ const progressItems: ProgressItem[] = [
   },
   {
     id: '8',
-    title: 'Take Home: AI Ethics',
+    title: 'Take Home: AI Safety',
     type: 'reading',
     status: 'not-started',
     duration: '25 min',
@@ -203,6 +203,8 @@ const MindMapPage: React.FC = () => {
 
   const personaWsRef = useRef<WebSocket | null>(null);
   const problemWsRef = useRef<WebSocket | null>(null);
+  const personaMessagesEndRef = useRef<HTMLDivElement>(null);
+  const problemMessagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   // Simple cleanup function for WebSocket
@@ -275,8 +277,19 @@ const MindMapPage: React.FC = () => {
   useEffect(() => {
     if (!user || !aiForGoodTeam || !designThinkingChats) return;
 
-    const setupPersonaWebSocket = () => {
+    const setupPersonaWebSocket = async () => {
       cleanupWebSocket(personaWsRef);
+      
+      // Load previous messages first
+      try {
+        console.log('Loading previous persona messages for teamId:', designThinkingChats.PersonaHelping, 'channelId:', designThinkingChats.PersonaHelpingChannel);
+        const previousMessages = await getChannelMessages(designThinkingChats.PersonaHelping, designThinkingChats.PersonaHelpingChannel);
+        console.log('Loaded persona messages:', previousMessages);
+        setPersonaMessages(previousMessages);
+      } catch (error) {
+        console.error('Error loading previous persona messages:', error);
+        setError('Failed to load previous persona messages');
+      }
       
       console.log('Setting up Persona WebSocket with teamId:', designThinkingChats.PersonaHelping, 'channelId:', designThinkingChats.PersonaHelpingChannel);
       
@@ -305,7 +318,13 @@ const MindMapPage: React.FC = () => {
               image_url: data.image_url || undefined
             };
 
-            setPersonaMessages(prev => [...prev, newMessage]);
+            setPersonaMessages(prev => {
+              // Check if message already exists to prevent duplicates
+              if (prev.some(msg => msg.MessageId === newMessage.MessageId)) {
+                return prev;
+              }
+              return [...prev, newMessage];
+            });
           }
         },
         (error) => {
@@ -351,8 +370,19 @@ const MindMapPage: React.FC = () => {
   useEffect(() => {
     if (!user || !aiForGoodTeam || !designThinkingChats) return;
 
-    const setupProblemWebSocket = () => {
+    const setupProblemWebSocket = async () => {
       cleanupWebSocket(problemWsRef);
+      
+      // Load previous messages first
+      try {
+        console.log('Loading previous problem messages for teamId:', designThinkingChats.ProblemStatementEmpathy, 'channelId:', designThinkingChats.ProblemStatementEmpathyChannel);
+        const previousMessages = await getChannelMessages(designThinkingChats.ProblemStatementEmpathy, designThinkingChats.ProblemStatementEmpathyChannel);
+        console.log('Loaded problem messages:', previousMessages);
+        setProblemMessages(previousMessages);
+      } catch (error) {
+        console.error('Error loading previous problem messages:', error);
+        setError('Failed to load previous problem messages');
+      }
       
       console.log('Setting up Problem WebSocket with teamId:', designThinkingChats.ProblemStatementEmpathy, 'channelId:', designThinkingChats.ProblemStatementEmpathyChannel);
       
@@ -381,7 +411,13 @@ const MindMapPage: React.FC = () => {
               image_url: data.image_url || undefined
             };
 
-            setProblemMessages(prev => [...prev, newMessage]);
+            setProblemMessages(prev => {
+              // Check if message already exists to prevent duplicates
+              if (prev.some(msg => msg.MessageId === newMessage.MessageId)) {
+                return prev;
+              }
+              return [...prev, newMessage];
+            });
           }
         },
         (error) => {
@@ -422,6 +458,16 @@ const MindMapPage: React.FC = () => {
       cleanupWebSocket(problemWsRef);
     };
   }, [user, aiForGoodTeam, designThinkingChats]);
+
+  // Scroll to bottom when persona messages change
+  useEffect(() => {
+    personaMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [personaMessages]);
+
+  // Scroll to bottom when problem messages change
+  useEffect(() => {
+    problemMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [problemMessages]);
 
   // Automatically select the Design Thinking activity when the page loads
   useEffect(() => {
@@ -721,6 +767,7 @@ const MindMapPage: React.FC = () => {
                           </div>
                         );
                       })}
+                      <div ref={personaMessagesEndRef} />
                     </div>
                   </div>
 
@@ -809,6 +856,7 @@ const MindMapPage: React.FC = () => {
                           </div>
                         );
                       })}
+                      <div ref={problemMessagesEndRef} />
                     </div>
                   </div>
 
