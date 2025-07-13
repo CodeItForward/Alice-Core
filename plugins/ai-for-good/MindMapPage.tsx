@@ -278,11 +278,11 @@ const MindMapPage: React.FC = () => {
     const setupPersonaWebSocket = () => {
       cleanupWebSocket(personaWsRef);
       
-      console.log('Setting up Persona WebSocket with teamId:', designThinkingChats.PersonaHelping, 'channelId:', designThinkingChats.PersonaHelping);
+      console.log('Setting up Persona WebSocket with teamId:', designThinkingChats.PersonaHelping, 'channelId:', designThinkingChats.PersonaHelpingChannel);
       
       const ws = createWebSocketConnection(
         designThinkingChats.PersonaHelping,
-        designThinkingChats.PersonaHelping,
+        designThinkingChats.PersonaHelpingChannel,
         (data: WebSocketMessage) => {
           setPersonaWsConnected(true);
           setError(null);
@@ -290,7 +290,7 @@ const MindMapPage: React.FC = () => {
           if (data.content && data.user_id && data.created_at) {
             const newMessage: ChatMessage = {
               MessageId: data.message_id || Date.now(),
-              ChannelId: designThinkingChats.PersonaHelping,
+              ChannelId: designThinkingChats.PersonaHelpingChannel,
               UserId: data.user_id,
               Text: data.content,
               Timestamp: data.created_at,
@@ -354,11 +354,11 @@ const MindMapPage: React.FC = () => {
     const setupProblemWebSocket = () => {
       cleanupWebSocket(problemWsRef);
       
-      console.log('Setting up Problem WebSocket with teamId:', designThinkingChats.ProblemStatementEmpathy, 'channelId:', designThinkingChats.ProblemStatementEmpathy);
+      console.log('Setting up Problem WebSocket with teamId:', designThinkingChats.ProblemStatementEmpathy, 'channelId:', designThinkingChats.ProblemStatementEmpathyChannel);
       
       const ws = createWebSocketConnection(
         designThinkingChats.ProblemStatementEmpathy,
-        designThinkingChats.ProblemStatementEmpathy,
+        designThinkingChats.ProblemStatementEmpathyChannel,
         (data: WebSocketMessage) => {
           setProblemWsConnected(true);
           setError(null);
@@ -366,7 +366,7 @@ const MindMapPage: React.FC = () => {
           if (data.content && data.user_id && data.created_at) {
             const newMessage: ChatMessage = {
               MessageId: data.message_id || Date.now(),
-              ChannelId: designThinkingChats.ProblemStatementEmpathy,
+              ChannelId: designThinkingChats.ProblemStatementEmpathyChannel,
               UserId: data.user_id,
               Text: data.content,
               Timestamp: data.created_at,
@@ -488,7 +488,7 @@ const MindMapPage: React.FC = () => {
         console.log('Persona WebSocket not available, using REST API fallback');
         const response = await postMessage(
           designThinkingChats.PersonaHelping, 
-          designThinkingChats.PersonaHelping, 
+          designThinkingChats.PersonaHelpingChannel, 
           parseInt(user.id), 
           messageText, 
           null, 
@@ -499,7 +499,7 @@ const MindMapPage: React.FC = () => {
         // Add message to local state
         const newMessage: ChatMessage = {
           MessageId: response.message_id,
-          ChannelId: designThinkingChats.PersonaHelping,
+          ChannelId: designThinkingChats.PersonaHelpingChannel,
           UserId: parseInt(user.id),
           Text: messageText,
           Timestamp: new Date().toISOString(),
@@ -545,7 +545,7 @@ const MindMapPage: React.FC = () => {
         console.log('Problem WebSocket not available, using REST API fallback');
         const response = await postMessage(
           designThinkingChats.ProblemStatementEmpathy, 
-          designThinkingChats.ProblemStatementEmpathy, 
+          designThinkingChats.ProblemStatementEmpathyChannel, 
           parseInt(user.id), 
           messageText, 
           null, 
@@ -556,7 +556,7 @@ const MindMapPage: React.FC = () => {
         // Add message to local state
         const newMessage: ChatMessage = {
           MessageId: response.message_id,
-          ChannelId: designThinkingChats.ProblemStatementEmpathy,
+          ChannelId: designThinkingChats.ProblemStatementEmpathyChannel,
           UserId: parseInt(user.id),
           Text: messageText,
           Timestamp: new Date().toISOString(),

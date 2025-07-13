@@ -141,6 +141,13 @@ export interface DesignThinkingChats {
   ProblemStatementEmpathy: number;
   ProblemStatementHowHelp: number;
   ProblemStatementWhy: number;
+  PersonaHelpingChannel: number;
+  PersonaChallengeChannel: number;
+  PersonaBestDayChannel: number;
+  PersonaWhyHelpChannel: number;
+  ProblemStatementEmpathyChannel: number;
+  ProblemStatementHowHelpChannel: number;
+  ProblemStatementWhyChannel: number;
 }
 
 export interface ImageUploadResponse {
