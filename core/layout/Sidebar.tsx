@@ -20,6 +20,11 @@ interface SidebarProps {
   colorScheme?: { primary: string; secondary: string };
 }
 
+// Utility to find the index of the active link in a list
+function findActiveIndex(links: SidebarNavLink[], activePath: string): number {
+  return links.findIndex((link: SidebarNavLink) => link.path === activePath);
+}
+
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, pluginNavLinks = [], Logo, colorScheme }) => {
   const [openSection, setOpenSection] = React.useState<string | null>(null);
   const [openSubSection, setOpenSubSection] = React.useState<string | null>(null);
@@ -42,6 +47,50 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, pluginNavLinks
       (navLink.path === '/codeitforward-chat' && navLink.label === "Let's Chat"))
   );
   console.log('Filtered nav links:', filteredNavLinks);
+
+  // Helper to render a list of links with progress coloring
+  function renderNavLinks(links: SidebarNavLink[], parentPath = ''): React.ReactNode[] {
+    const activeIdx = findActiveIndex(links, location.pathname);
+    return links.map((link: SidebarNavLink, idx: number) => {
+      let statusOverride: 'completed' | 'active' | undefined;
+      if (activeIdx === idx) {
+        statusOverride = 'active';
+      } else if (activeIdx > -1 && idx < activeIdx) {
+        statusOverride = 'completed';
+      }
+      if (link.children) {
+        return (
+          <div key={link.path}>
+            <button
+              className={`flex items-center w-full px-3 py-2 text-gray-700 rounded-md hover:bg-purple-50 hover:text-purple-800 transition-colors duration-200 group font-medium focus:outline-none ${isMinimized ? 'justify-center' : ''}`}
+              onClick={() => setOpenSubSection(openSubSection === link.path ? null : link.path)}
+              aria-expanded={openSubSection === link.path}
+            >
+              {!isMinimized && <span className="flex-1 text-left">{link.label}</span>}
+              {openSubSection === link.path ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+            </button>
+            {openSubSection === link.path && !isMinimized && (
+              <div className="ml-4 mt-1 space-y-1">
+                {renderNavLinks(link.children, link.path)}
+              </div>
+            )}
+          </div>
+        );
+      } else {
+        return (
+          <SidebarLink
+            key={link.path}
+            to={link.path}
+            label={link.label}
+            icon={link.icon}
+            status={statusOverride || link.status}
+            type={link.type}
+            isMinimized={isMinimized}
+          />
+        );
+      }
+    });
+  }
 
   return (
     <>
@@ -115,45 +164,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, pluginNavLinks
                     isMinimized={isMinimized}
                   />
                   <div className="ml-4 mt-1 space-y-1">
-                    {navLink.children.map((child: any, childIdx: number) =>
-                      child.children ? (
-                        <div key={`${child.path}-${childIdx}`}> 
-                          <button
-                            className={`flex items-center w-full px-3 py-2 text-gray-700 rounded-md hover:bg-purple-50 hover:text-purple-800 transition-colors duration-200 group font-medium focus:outline-none ${isMinimized ? 'justify-center' : ''}`}
-                            onClick={() => setOpenSubSection(openSubSection === child.path ? null : child.path)}
-                            aria-expanded={openSubSection === child.path}
-                          >
-                            {!isMinimized && <span className="flex-1 text-left">{child.label}</span>}
-                            {openSubSection === child.path ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                          </button>
-                          {openSubSection === child.path && !isMinimized && (
-                            <div className="ml-4 mt-1 space-y-1">
-                              {child.children.map((grandChild: any, grandIdx: number) => (
-                                <SidebarLink
-                                  key={`${grandChild.path}-${grandIdx}`}
-                                  to={grandChild.path}
-                                  label={grandChild.label}
-                                  icon={grandChild.icon}
-                                  status={grandChild.status}
-                                  type={grandChild.type}
-                                  isMinimized={isMinimized}
-                                />
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <SidebarLink
-                          key={`${child.path}-${childIdx}`}
-                          to={child.path}
-                          label={child.label}
-                          icon={child.icon}
-                          status={child.status}
-                          type={child.type}
-                          isMinimized={isMinimized}
-                        />
-                      )
-                    )}
+                    {renderNavLinks(navLink.children)}
                   </div>
                 </div>
               );
@@ -171,45 +182,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, pluginNavLinks
                 </button>
                 {openSection === navLink.path && !isMinimized && (
                   <div className="ml-4 mt-1 space-y-1">
-                    {Array.isArray(navLink.children) ? navLink.children.map((child: any, childIdx: number) =>
-                      child.children ? (
-                        <div key={`${child.path}-${childIdx}`}> 
-                          <button
-                            className={`flex items-center w-full px-3 py-2 text-gray-700 rounded-md hover:bg-purple-50 hover:text-purple-800 transition-colors duration-200 group font-medium focus:outline-none ${isMinimized ? 'justify-center' : ''}`}
-                            onClick={() => setOpenSubSection(openSubSection === child.path ? null : child.path)}
-                            aria-expanded={openSubSection === child.path}
-                          >
-                            {!isMinimized && <span className="flex-1 text-left">{child.label}</span>}
-                            {openSubSection === child.path ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                          </button>
-                          {openSubSection === child.path && !isMinimized && (
-                            <div className="ml-4 mt-1 space-y-1">
-                              {child.children.map((grandChild: any, grandIdx: number) => (
-                                <SidebarLink
-                                  key={`${grandChild.path}-${grandIdx}`}
-                                  to={grandChild.path}
-                                  label={grandChild.label}
-                                  icon={grandChild.icon}
-                                  status={grandChild.status}
-                                  type={grandChild.type}
-                                  isMinimized={isMinimized}
-                                />
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <SidebarLink
-                          key={`${child.path}-${childIdx}`}
-                          to={child.path}
-                          label={child.label}
-                          icon={child.icon}
-                          status={child.status}
-                          type={child.type}
-                          isMinimized={isMinimized}
-                        />
-                      )
-                    ) : null}
+                    {renderNavLinks(navLink.children, navLink.path)}
                   </div>
                 )}
               </div>
