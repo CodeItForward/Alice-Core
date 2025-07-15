@@ -10,6 +10,8 @@ import TeambuildingPage from './TeambuildingPage';
 import MindMapPage from './MindMapPage';
 import AIEthicsPage from './AIEthicsPage';
 import AiForGoodPage from './AiForGoodPage';
+import Module2WelcomePage from './Module2WelcomePage';
+import Module3WelcomePage from './Module3WelcomePage';
 import { Navigate } from 'react-router-dom';
 
 // Wrapper component to enforce role checks
@@ -66,69 +68,41 @@ export default {
     {
       label: 'AI for Good',
       path: '/ai-for-good',
-      icon: <Activity size={18} className="text-orange-500" />,
       children: [
+        {
+          label: 'Group Chat',
+          path: '/ai-for-good/chat',
+          icon: <Activity size={18} className="text-orange-500" />
+        },
         {
           label: 'Module 1',
           path: '/ai-for-good/module-1',
           icon: <BookOpen size={16} className="text-purple-500" />,
           children: [
-            { 
-              label: 'Welcome', 
-              path: '/ai-for-good/welcome',
-              icon: <Video size={16} className="text-blue-500" />,
-              type: 'video',
-              status: 'completed'
-            },
-            { 
-              label: 'Intro to AI', 
-              path: '/ai-for-good/intro-to-ai',
-              icon: <Video size={16} className="text-blue-500" />,
-              type: 'video',
-              status: 'in-progress'
-            },
-            { 
-              label: 'Game Time', 
-              path: '/ai-for-good/game-time',
-              icon: <Activity size={16} className="text-orange-500" />,
-              type: 'activity',
-              status: 'not-started'
-            },
-            { 
-              label: 'Prompt Best Practices', 
-              path: '/ai-for-good/prompt-best-practices',
-              icon: <BookOpen size={16} className="text-purple-500" />,
-              type: 'reading',
-              status: 'not-started'
-            },
-            { 
-              label: 'Prompt Engineering', 
-              path: '/ai-for-good/prompt-engineering',
-              icon: <Activity size={16} className="text-orange-500" />,
-              type: 'activity',
-              status: 'not-started'
-            },
-            { 
-              label: 'Teambuilding', 
-              path: '/ai-for-good/teambuilding',
-              icon: <Activity size={16} className="text-orange-500" />,
-              type: 'activity',
-              status: 'not-started'
-            },
-            { 
-              label: 'Design Thinking', 
-              path: '/ai-for-good/mind-map',
-              icon: <Activity size={16} className="text-orange-500" />,
-              type: 'activity',
-              status: 'not-started'
-            },
-            { 
-              label: 'AI Safety', 
-              path: '/ai-for-good/ai-ethics',
-              icon: <BookOpen size={16} className="text-purple-500" />,
-              type: 'reading',
-              status: 'not-started'
-            },
+            { label: 'Welcome', path: '/ai-for-good/welcome', icon: <Video size={16} className="text-blue-500" />, type: 'video', status: 'completed' },
+            { label: 'Intro to AI', path: '/ai-for-good/intro-to-ai', icon: <Video size={16} className="text-blue-500" />, type: 'video', status: 'in-progress' },
+            { label: 'Game Time', path: '/ai-for-good/game-time', icon: <Activity size={16} className="text-orange-500" />, type: 'activity', status: 'not-started' },
+            { label: 'Prompt Best Practices', path: '/ai-for-good/prompt-best-practices', icon: <BookOpen size={16} className="text-purple-500" />, type: 'reading', status: 'not-started' },
+            { label: 'Prompt Engineering', path: '/ai-for-good/prompt-engineering', icon: <Activity size={16} className="text-orange-500" />, type: 'activity', status: 'not-started' },
+            { label: 'Teambuilding', path: '/ai-for-good/teambuilding', icon: <Activity size={16} className="text-orange-500" />, type: 'activity', status: 'not-started' },
+            { label: 'Design Thinking', path: '/ai-for-good/mind-map', icon: <Activity size={16} className="text-orange-500" />, type: 'activity', status: 'not-started' },
+            { label: 'AI Safety', path: '/ai-for-good/ai-ethics', icon: <BookOpen size={16} className="text-purple-500" />, type: 'reading', status: 'not-started' },
+          ]
+        },
+        {
+          label: 'Module 2',
+          path: '/ai-for-good/module-2',
+          icon: <BookOpen size={16} className="text-green-500" />,
+          children: [
+            { label: 'Module 2 Welcome', path: '/ai-for-good/module-2-welcome', icon: <Video size={16} className="text-blue-500" />, type: 'video', status: 'not-started' }
+          ]
+        },
+        {
+          label: 'Module 3',
+          path: '/ai-for-good/module-3',
+          icon: <BookOpen size={16} className="text-yellow-500" />,
+          children: [
+            { label: 'Module 3 Welcome', path: '/ai-for-good/module-3-welcome', icon: <Video size={16} className="text-blue-500" />, type: 'video', status: 'not-started' }
           ]
         }
       ]
@@ -144,6 +118,8 @@ export default {
     { path: '/ai-for-good/mind-map', component: withRoleCheck(MindMapPage) },
     { path: '/ai-for-good/ai-ethics', component: withRoleCheck(AIEthicsPage) },
     { path: '/ai-for-good/chat', component: withRoleCheck(AiForGoodPage) },
+    { path: '/ai-for-good/module-2-welcome', component: withRoleCheck(Module2WelcomePage) },
+    { path: '/ai-for-good/module-3-welcome', component: withRoleCheck(Module3WelcomePage) },
     { path: '/ai-for-good', component: () => <Navigate to="/ai-for-good/welcome" replace /> }
   ]
 }; 

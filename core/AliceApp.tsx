@@ -11,11 +11,7 @@ interface AliceAppProps {
     openAIApiKey: string;
     theme: string;
   };
-  plugins: Array<{
-    name: string;
-    navLinks: Array<{ label: string; path: string }>;
-    routes: Array<{ path: string; component: React.ComponentType }>;
-  }>;
+  plugins: Array<any>; // Allow any structure for navLinks, including nested children
 }
 
 interface Theme {

@@ -3,16 +3,26 @@ import { Link, useLocation } from 'react-router-dom';
 import { MessageSquarePlus, ChevronLeft, ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 // import { Logo } from '../ui/Logo';
 
+interface SidebarNavLink {
+  label: string;
+  path: string;
+  icon?: React.ReactNode;
+  status?: string;
+  type?: string;
+  children?: SidebarNavLink[];
+}
+
 interface SidebarProps {
   isOpen: boolean;
   toggleSidebar: () => void;
-  pluginNavLinks?: Array<{ label: string; path: string; children?: Array<{ label: string; path: string }> }>;
+  pluginNavLinks?: SidebarNavLink[];
   Logo?: React.ComponentType;
   colorScheme?: { primary: string; secondary: string };
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, pluginNavLinks = [], Logo, colorScheme }) => {
   const [openSection, setOpenSection] = React.useState<string | null>(null);
+  const [openSubSection, setOpenSubSection] = React.useState<string | null>(null);
   const [isMinimized, setIsMinimized] = React.useState(false);
   const location = useLocation();
 
@@ -49,7 +59,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, pluginNavLinks
           isOpen ? 'translate-x-0' : '-translate-x-full'
         } fixed inset-y-0 left-0 z-30 ${
           isMinimized ? 'w-16' : 'w-64'
-        } bg-white shadow-lg transform transition-all duration-200 ease-in-out lg:translate-x-0 lg:static lg:z-auto`}
+        } bg-white shadow-lg transform transition-all duration-200 ease-in-out lg:translate-x-0 lg:static lg:z-auto flex flex-col`}
       >
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
           {!isMinimized && Logo ? <Logo /> : null}
@@ -70,89 +80,156 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, pluginNavLinks
           </button>
         </div>
         
-        <nav className={`p-4 space-y-2 ${isMinimized ? 'px-2' : ''}`}>
-          {/* Only show Alice Chat link at the top */}
-          <SidebarLink 
-            to="/codeitforward-chat" 
-            icon={<MessageSquarePlus size={18} />} 
-            label="Alice Chat" 
-            isMinimized={isMinimized}
-          />
+        <nav className={`p-4 space-y-2 ${isMinimized ? 'px-2' : ''}`}
+          style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}
+        >
+          {pluginNavLinks.some(link => link.path === '/chat' && link.label === 'Chat') && (
+            <SidebarLink 
+              to="/chat" 
+              icon={<MessageSquarePlus size={18} />} 
+              label="New Chat" 
+              isMinimized={isMinimized}
+            />
+          )}
+          {pluginNavLinks.some(link => link.path === '/codeitforward-chat' && link.label === "Let's Chat") && (
+            <SidebarLink 
+              to="/codeitforward-chat" 
+              icon={<MessageSquarePlus size={18} />} 
+              label="Let's Chat" 
+              isMinimized={isMinimized}
+            />
+          )}
+          
           {/* Plugin navigation links */}
           {filteredNavLinks.map((navLink, index) => {
-            // Only allow expansion for 'Module 1', not for 'AI for Good'
-            if ('children' in navLink && Array.isArray(navLink.children) && navLink.children.length === 1 && navLink.children[0] && navLink.children[0].label === 'Module 1' && 'children' in navLink.children[0] && Array.isArray(navLink.children[0].children)) {
-              const module1 = navLink.children[0];
-              const isModule1Open = openSection === module1.path;
+            // If this is the AI for Good parent, always render its children expanded
+            if (navLink.label === 'AI for Good' && Array.isArray(navLink.children)) {
               return (
                 <div key={`${navLink.path}-${index}`}> 
-                  {/* AI for Good label, not expandable */}
-                  <div className={`flex items-center w-full px-3 py-2 text-gray-700 rounded-md font-medium ${isMinimized ? 'justify-center' : ''}`}>{!isMinimized && <span className="flex-1 text-left">{navLink.label}</span>}</div>
-                  {/* Group Chat link below AI for Good and above Module 1 */}
-                  <div className="ml-4 mb-1">
-                    <SidebarLink
-                      to="/ai-for-good/chat"
-                      icon={<MessageSquarePlus size={18} className="text-purple-500" />}
-                      label="Group Chat"
-                      isMinimized={isMinimized}
-                    />
+                  <SidebarLink
+                    to={navLink.path}
+                    label={navLink.label}
+                    icon={navLink.icon}
+                    status={navLink.status}
+                    type={navLink.type}
+                    isMinimized={isMinimized}
+                  />
+                  <div className="ml-4 mt-1 space-y-1">
+                    {navLink.children.map((child: any, childIdx: number) =>
+                      child.children ? (
+                        <div key={`${child.path}-${childIdx}`}> 
+                          <button
+                            className={`flex items-center w-full px-3 py-2 text-gray-700 rounded-md hover:bg-purple-50 hover:text-purple-800 transition-colors duration-200 group font-medium focus:outline-none ${isMinimized ? 'justify-center' : ''}`}
+                            onClick={() => setOpenSubSection(openSubSection === child.path ? null : child.path)}
+                            aria-expanded={openSubSection === child.path}
+                          >
+                            {!isMinimized && <span className="flex-1 text-left">{child.label}</span>}
+                            {openSubSection === child.path ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                          </button>
+                          {openSubSection === child.path && !isMinimized && (
+                            <div className="ml-4 mt-1 space-y-1">
+                              {child.children.map((grandChild: any, grandIdx: number) => (
+                                <SidebarLink
+                                  key={`${grandChild.path}-${grandIdx}`}
+                                  to={grandChild.path}
+                                  label={grandChild.label}
+                                  icon={grandChild.icon}
+                                  status={grandChild.status}
+                                  type={grandChild.type}
+                                  isMinimized={isMinimized}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <SidebarLink
+                          key={`${child.path}-${childIdx}`}
+                          to={child.path}
+                          label={child.label}
+                          icon={child.icon}
+                          status={child.status}
+                          type={child.type}
+                          isMinimized={isMinimized}
+                        />
+                      )
+                    )}
                   </div>
-                  {/* Module 1 expandable */}
-                  <button
-                    className={`flex items-center w-full px-3 py-2 text-gray-700 rounded-md hover:bg-purple-50 hover:text-purple-800 transition-colors duration-200 group font-medium focus:outline-none ${isMinimized ? 'justify-center' : ''} ml-4`}
-                    onClick={() => handleSectionClick(module1.path)}
-                    aria-expanded={isModule1Open}
-                  >
-                    {/* Book icon for Module 1 */}
-                    {!isMinimized && module1.icon && <span className="mr-2">{module1.icon}</span>}
-                    {!isMinimized && <span className="flex-1 text-left">{module1.label}</span>}
-                    {isModule1Open ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-                  </button>
-                  {isModule1Open && !isMinimized && (
-                    <div className="ml-4 mt-1 space-y-1">
-                      {(() => {
-                        // Find the index of the active child
-                        const activeIdx = 'children' in module1 && Array.isArray(module1.children) ? module1.children.findIndex((child: any) => location.pathname === child.path) : -1;
-                        return 'children' in module1 && Array.isArray(module1.children) ? module1.children.map((child: any, childIdx: number) => {
-                          let status = 'not-started';
-                          if (activeIdx !== -1) {
-                            if (childIdx < activeIdx) status = 'completed';
-                            else if (childIdx === activeIdx) status = 'in-progress';
-                          }
-                          return (
-                            <SidebarLink
-                              key={`${child.path}-${childIdx}`}
-                              to={child.path}
-                              label={child.label}
-                              icon={child.icon}
-                              status={status}
-                              type={child.type}
-                              isMinimized={isMinimized}
-                            />
-                          );
-                        }) : null;
-                      })()}
-                    </div>
-                  )}
                 </div>
               );
             }
-            // Default rendering for other nav links (only those without children)
-            if (!('children' in navLink)) {
-              return (
-                <SidebarLink 
-                  key={`${navLink.path}-${index}`}
-                  to={navLink.path}
-                  label={navLink.label}
-                  isMinimized={isMinimized}
-                />
-              );
-            }
-            return null;
+            // Default behavior for other nav links
+            return navLink.children ? (
+              <div key={`${navLink.path}-${index}`}> 
+                <button
+                  className={`flex items-center w-full px-3 py-2 text-gray-700 rounded-md hover:bg-purple-50 hover:text-purple-800 transition-colors duration-200 group font-medium focus:outline-none ${isMinimized ? 'justify-center' : ''}`}
+                  onClick={() => handleSectionClick(navLink.path)}
+                  aria-expanded={openSection === navLink.path}
+                >
+                  {!isMinimized && <span className="flex-1 text-left">{navLink.label}</span>}
+                  {openSection === navLink.path ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                </button>
+                {openSection === navLink.path && !isMinimized && (
+                  <div className="ml-4 mt-1 space-y-1">
+                    {Array.isArray(navLink.children) ? navLink.children.map((child: any, childIdx: number) =>
+                      child.children ? (
+                        <div key={`${child.path}-${childIdx}`}> 
+                          <button
+                            className={`flex items-center w-full px-3 py-2 text-gray-700 rounded-md hover:bg-purple-50 hover:text-purple-800 transition-colors duration-200 group font-medium focus:outline-none ${isMinimized ? 'justify-center' : ''}`}
+                            onClick={() => setOpenSubSection(openSubSection === child.path ? null : child.path)}
+                            aria-expanded={openSubSection === child.path}
+                          >
+                            {!isMinimized && <span className="flex-1 text-left">{child.label}</span>}
+                            {openSubSection === child.path ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                          </button>
+                          {openSubSection === child.path && !isMinimized && (
+                            <div className="ml-4 mt-1 space-y-1">
+                              {child.children.map((grandChild: any, grandIdx: number) => (
+                                <SidebarLink
+                                  key={`${grandChild.path}-${grandIdx}`}
+                                  to={grandChild.path}
+                                  label={grandChild.label}
+                                  icon={grandChild.icon}
+                                  status={grandChild.status}
+                                  type={grandChild.type}
+                                  isMinimized={isMinimized}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <SidebarLink
+                          key={`${child.path}-${childIdx}`}
+                          to={child.path}
+                          label={child.label}
+                          icon={child.icon}
+                          status={child.status}
+                          type={child.type}
+                          isMinimized={isMinimized}
+                        />
+                      )
+                    ) : null}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <SidebarLink 
+                key={`${navLink.path}-${index}`}
+                to={navLink.path}
+                label={navLink.label}
+                icon={navLink.icon}
+                status={navLink.status}
+                type={navLink.type}
+                isMinimized={isMinimized}
+              />
+            );
           })}
         </nav>
         
-        <div className={`absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 ${isMinimized ? 'px-2' : ''}`}>
+        <div className={`absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 ${isMinimized ? 'px-2' : ''}`}
+          style={{ background: 'white' }}
+        >
           <div className="flex items-center space-x-4">
             <div className="w-8 h-8 rounded-full" style={{ background: colorScheme?.secondary || '#EDE9FE', color: colorScheme?.primary || '#6D28D9' }}>
               <span className="flex items-center justify-center h-full">A</span>
@@ -178,57 +255,40 @@ const SidebarLink: React.FC<{
   type?: string;
   isMinimized?: boolean;
 }> = ({ to, icon, label, status, type, isMinimized }) => {
-  // Import icons for status indicators
+  const location = useLocation();
+  const isActive = location.pathname === to;
+  // Determine if this link is above the active link in the nav tree
+  // We'll use status === 'completed' for green, isActive for yellow
   const CheckCircle = ({ size, className }: { size: number; className: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
       <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
       <path d="m9 11 3 3L22 4"></path>
     </svg>
   );
-  
   const Clock = ({ size, className }: { size: number; className: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
       <circle cx="12" cy="12" r="10"></circle>
       <polyline points="12,6 12,12 16,14"></polyline>
     </svg>
   );
-
-  const getStatusIcon = () => {
-    if (status === 'completed') {
-      return <CheckCircle size={16} className="text-green-500" />;
-    } else if (status === 'in-progress') {
-      return <Clock size={16} className="text-yellow-500" />;
-    }
-    return null;
-  };
-
-  const getStatusClasses = () => {
-    if (status === 'completed') {
-      return 'bg-green-50 text-green-800';
-    } else if (status === 'in-progress') {
-      return 'bg-yellow-50 text-yellow-800';
-    }
-    return 'text-gray-600 hover:bg-purple-50 hover:text-purple-800';
-  };
-
+  let statusIcon = null;
+  let statusClasses = 'text-gray-600 hover:bg-purple-50 hover:text-purple-800';
+  if (isActive) {
+    statusClasses = 'bg-yellow-50 text-yellow-800';
+    statusIcon = <Clock size={16} className="text-yellow-500" />;
+  } else if (status === 'completed') {
+    statusClasses = 'bg-green-50 text-green-800';
+    statusIcon = <CheckCircle size={16} className="text-green-500" />;
+  }
   return (
     <Link 
       to={to}
-      className={`flex items-center w-full px-3 py-2 rounded transition-colors duration-200 group ${getStatusClasses()} ${isMinimized ? 'justify-center' : ''}`}
+      className={`flex items-center w-full px-3 py-2 rounded transition-colors duration-200 group ${statusClasses} ${isMinimized ? 'justify-center' : ''}`}
       title={isMinimized ? label : undefined}
     >
-      {!isMinimized && status && type ? (
-        <div className="flex items-center space-x-2 w-full">
-          {icon}
-          <span className="flex-1">{label}</span>
-          {getStatusIcon()}
-        </div>
-      ) : (
-        <>
-          {icon && <span className={`text-gray-500 group-hover:text-purple-800 transition-colors duration-200 ${!isMinimized ? 'mr-3' : ''}`}>{icon}</span>}
-          {!isMinimized && <span className="font-medium">{label}</span>}
-        </>
-      )}
+      {icon && <span className={`text-gray-500 group-hover:text-purple-800 transition-colors duration-200 ${!isMinimized ? 'mr-3' : ''}`}>{icon}</span>}
+      {!isMinimized && <span className="font-medium flex-1">{label}</span>}
+      {!isMinimized && statusIcon}
     </Link>
   );
 };
