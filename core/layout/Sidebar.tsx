@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { MessageSquarePlus, ChevronLeft, ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 // import { Logo } from '../ui/Logo';
 
@@ -14,6 +14,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, pluginNavLinks = [], Logo, colorScheme }) => {
   const [openSection, setOpenSection] = React.useState<string | null>(null);
   const [isMinimized, setIsMinimized] = React.useState(false);
+  const location = useLocation();
 
   console.log('Sidebar received pluginNavLinks:', pluginNavLinks);
 
@@ -89,44 +90,66 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, pluginNavLinks
           
           {/* Plugin navigation links */}
           {filteredNavLinks.map((navLink, index) => {
-            console.log('Rendering nav link:', navLink);
-            return navLink.children ? (
-              <div key={`${navLink.path}-${index}`}> 
-                <button
-                  className={`flex items-center w-full px-3 py-2 text-gray-700 rounded-md hover:bg-purple-50 hover:text-purple-800 transition-colors duration-200 group font-medium focus:outline-none ${isMinimized ? 'justify-center' : ''}`}
-                  onClick={() => handleSectionClick(navLink.path)}
-                  aria-expanded={openSection === navLink.path}
-                >
-                  {!isMinimized && <span className="flex-1 text-left">{navLink.label}</span>}
-                  {openSection === navLink.path ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-                </button>
-                {openSection === navLink.path && !isMinimized && (
-                  <div className="ml-4 mt-1 space-y-1">
-                    {navLink.children.map((child: any, childIdx: number) => {
-                      console.log('Rendering child link:', child);
-                      return (
-                        <SidebarLink
-                          key={`${child.path}-${childIdx}`}
-                          to={child.path}
-                          label={child.label}
-                          icon={child.icon}
-                          status={child.status}
-                          type={child.type}
-                          isMinimized={isMinimized}
-                        />
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <SidebarLink 
-                key={`${navLink.path}-${index}`}
-                to={navLink.path}
-                label={navLink.label}
-                isMinimized={isMinimized}
-              />
-            );
+            // Only allow expansion for 'Module 1', not for 'AI for Good'
+            if ('children' in navLink && Array.isArray(navLink.children) && navLink.children.length === 1 && navLink.children[0] && navLink.children[0].label === 'Module 1' && 'children' in navLink.children[0] && Array.isArray(navLink.children[0].children)) {
+              const module1 = navLink.children[0];
+              const isModule1Open = openSection === module1.path;
+              return (
+                <div key={`${navLink.path}-${index}`}> 
+                  {/* AI for Good label, not expandable */}
+                  <div className={`flex items-center w-full px-3 py-2 text-gray-700 rounded-md font-medium ${isMinimized ? 'justify-center' : ''}`}>{!isMinimized && <span className="flex-1 text-left">{navLink.label}</span>}</div>
+                  {/* Module 1 expandable */}
+                  <button
+                    className={`flex items-center w-full px-3 py-2 text-gray-700 rounded-md hover:bg-purple-50 hover:text-purple-800 transition-colors duration-200 group font-medium focus:outline-none ${isMinimized ? 'justify-center' : ''} ml-4`}
+                    onClick={() => handleSectionClick(module1.path)}
+                    aria-expanded={isModule1Open}
+                  >
+                    {/* Book icon for Module 1 */}
+                    {!isMinimized && module1.icon && <span className="mr-2">{module1.icon}</span>}
+                    {!isMinimized && <span className="flex-1 text-left">{module1.label}</span>}
+                    {isModule1Open ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                  </button>
+                  {isModule1Open && !isMinimized && (
+                    <div className="ml-4 mt-1 space-y-1">
+                      {(() => {
+                        // Find the index of the active child
+                        const activeIdx = 'children' in module1 && Array.isArray(module1.children) ? module1.children.findIndex((child: any) => location.pathname === child.path) : -1;
+                        return 'children' in module1 && Array.isArray(module1.children) ? module1.children.map((child: any, childIdx: number) => {
+                          let status = 'not-started';
+                          if (activeIdx !== -1) {
+                            if (childIdx < activeIdx) status = 'completed';
+                            else if (childIdx === activeIdx) status = 'in-progress';
+                          }
+                          return (
+                            <SidebarLink
+                              key={`${child.path}-${childIdx}`}
+                              to={child.path}
+                              label={child.label}
+                              icon={child.icon}
+                              status={status}
+                              type={child.type}
+                              isMinimized={isMinimized}
+                            />
+                          );
+                        }) : null;
+                      })()}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+            // Default rendering for other nav links (only those without children)
+            if (!('children' in navLink)) {
+              return (
+                <SidebarLink 
+                  key={`${navLink.path}-${index}`}
+                  to={navLink.path}
+                  label={navLink.label}
+                  isMinimized={isMinimized}
+                />
+              );
+            }
+            return null;
           })}
         </nav>
         

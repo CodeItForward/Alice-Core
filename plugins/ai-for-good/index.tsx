@@ -67,62 +67,69 @@ export default {
       path: '/ai-for-good',
       icon: <Activity size={18} className="text-orange-500" />,
       children: [
-        { 
-          label: 'Welcome', 
-          path: '/ai-for-good/welcome',
-          icon: <Video size={16} className="text-blue-500" />,
-          type: 'video',
-          status: 'completed'
-        },
-        { 
-          label: 'Intro to AI', 
-          path: '/ai-for-good/intro-to-ai',
-          icon: <Video size={16} className="text-blue-500" />,
-          type: 'video',
-          status: 'in-progress'
-        },
-        { 
-          label: 'Game Time', 
-          path: '/ai-for-good/game-time',
-          icon: <Activity size={16} className="text-orange-500" />,
-          type: 'activity',
-          status: 'not-started'
-        },
-        { 
-          label: 'Prompt Best Practices', 
-          path: '/ai-for-good/prompt-best-practices',
+        {
+          label: 'Module 1',
+          path: '/ai-for-good/module-1',
           icon: <BookOpen size={16} className="text-purple-500" />,
-          type: 'reading',
-          status: 'not-started'
-        },
-        { 
-          label: 'Prompt Engineering', 
-          path: '/ai-for-good/prompt-engineering',
-          icon: <Activity size={16} className="text-orange-500" />,
-          type: 'activity',
-          status: 'not-started'
-        },
-        { 
-          label: 'Teambuilding', 
-          path: '/ai-for-good/teambuilding',
-          icon: <Activity size={16} className="text-orange-500" />,
-          type: 'activity',
-          status: 'not-started'
-        },
-        { 
-          label: 'Design Thinking', 
-          path: '/ai-for-good/mind-map',
-          icon: <Activity size={16} className="text-orange-500" />,
-          type: 'activity',
-          status: 'not-started'
-        },
-        { 
-          label: 'AI Safety', 
-          path: '/ai-for-good/ai-ethics',
-          icon: <BookOpen size={16} className="text-purple-500" />,
-          type: 'reading',
-          status: 'not-started'
-        },
+          children: [
+            { 
+              label: 'Welcome', 
+              path: '/ai-for-good/welcome',
+              icon: <Video size={16} className="text-blue-500" />,
+              type: 'video',
+              status: 'completed'
+            },
+            { 
+              label: 'Intro to AI', 
+              path: '/ai-for-good/intro-to-ai',
+              icon: <Video size={16} className="text-blue-500" />,
+              type: 'video',
+              status: 'in-progress'
+            },
+            { 
+              label: 'Game Time', 
+              path: '/ai-for-good/game-time',
+              icon: <Activity size={16} className="text-orange-500" />,
+              type: 'activity',
+              status: 'not-started'
+            },
+            { 
+              label: 'Prompt Best Practices', 
+              path: '/ai-for-good/prompt-best-practices',
+              icon: <BookOpen size={16} className="text-purple-500" />,
+              type: 'reading',
+              status: 'not-started'
+            },
+            { 
+              label: 'Prompt Engineering', 
+              path: '/ai-for-good/prompt-engineering',
+              icon: <Activity size={16} className="text-orange-500" />,
+              type: 'activity',
+              status: 'not-started'
+            },
+            { 
+              label: 'Teambuilding', 
+              path: '/ai-for-good/teambuilding',
+              icon: <Activity size={16} className="text-orange-500" />,
+              type: 'activity',
+              status: 'not-started'
+            },
+            { 
+              label: 'Design Thinking', 
+              path: '/ai-for-good/mind-map',
+              icon: <Activity size={16} className="text-orange-500" />,
+              type: 'activity',
+              status: 'not-started'
+            },
+            { 
+              label: 'AI Safety', 
+              path: '/ai-for-good/ai-ethics',
+              icon: <BookOpen size={16} className="text-purple-500" />,
+              type: 'reading',
+              status: 'not-started'
+            },
+          ]
+        }
       ]
     }
   ],

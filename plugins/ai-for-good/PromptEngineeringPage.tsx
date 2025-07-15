@@ -4,16 +4,11 @@ import { ArrowRight, MessageSquare, Image as ImageIcon, Save, X, Loader2, Bot, U
 import { useAuth } from '../../core/context/AuthContext';
 import { getTeamChannels, getChannelMessages, postMessage, createWebSocketConnection, type Channel, type ChatMessage, type WebSocketMessage, getComicStrip, getUserComicStrips, createComicStrip, updateComicStrip, type ComicStrip } from '../../core/services/api';
 
-
-
 interface ComicPanel {
   id: number;
   imageUrl: string;
   caption: string;
 }
-
-
-
 
 const PromptEngineeringPage: React.FC = () => {
   const { user } = useAuth();
@@ -264,8 +259,6 @@ const PromptEngineeringPage: React.FC = () => {
     }
   };
 
-
-
   // Load or create comic strip when component mounts
   useEffect(() => {
     const loadComicStrip = async () => {
@@ -401,8 +394,6 @@ const PromptEngineeringPage: React.FC = () => {
     }
   };
 
-
-
   // Wrapper to log every setMessages call
   const setMessagesWithLog = (...args: Parameters<typeof setMessages>) => {
     console.log('setMessages called with args:', args);
@@ -432,8 +423,8 @@ const PromptEngineeringPage: React.FC = () => {
         {/* Header */}
         <div className="bg-white p-4 border-b border-gray-200">
           <div className="max-w-6xl mx-auto">
-            <h3 className="text-xl font-bold text-gray-800">Prompt Engineering Activity</h3>
-            <p className="text-gray-500">Learn and practice effective prompt engineering techniques</p>
+            {/* Removed: <h3 className="text-xl font-bold text-gray-800">Prompt Engineering Activity</h3> */}
+            {/* Removed: <p className="text-gray-500">Learn and practice effective prompt engineering techniques</p> */}
           </div>
         </div>
 

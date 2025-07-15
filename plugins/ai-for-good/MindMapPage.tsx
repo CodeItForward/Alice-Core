@@ -37,6 +37,7 @@ interface ConversationCard {
   isLoading: boolean;
 }
 
+const currentPageId = '7'; // Design Thinking
 const progressItems: ProgressItem[] = [
   {
     id: '1',
@@ -51,7 +52,7 @@ const progressItems: ProgressItem[] = [
     id: '2',
     title: 'Intro to AI',
     type: 'video',
-    status: 'in-progress',
+    status: 'completed',
     duration: '20 min',
     link: '/ai-for-good/intro-to-ai',
     videoUrl: 'https://www.youtube.com/embed/F26Ni2776hQ'
@@ -60,7 +61,7 @@ const progressItems: ProgressItem[] = [
     id: '3',
     title: 'Game Time! Group Activity',
     type: 'activity',
-    status: 'in-progress',
+    status: 'completed',
     duration: '45 min',
     link: '/ai-for-good/game-time'
   },
@@ -68,7 +69,7 @@ const progressItems: ProgressItem[] = [
     id: '4',
     title: 'Prompt Engineering Best Practices',
     type: 'reading',
-    status: 'not-started',
+    status: 'completed',
     duration: '20 min',
     link: '/ai-for-good/prompt-best-practices'
   },
@@ -76,7 +77,7 @@ const progressItems: ProgressItem[] = [
     id: '5',
     title: 'Prompt Engineering Activity',
     type: 'activity',
-    status: 'not-started',
+    status: 'completed',
     duration: '30 min',
     link: '/ai-for-good/prompt-engineering'
   },
@@ -84,7 +85,7 @@ const progressItems: ProgressItem[] = [
     id: '6',
     title: 'Teambuilding',
     type: 'activity',
-    status: 'not-started',
+    status: 'completed',
     duration: '30 min',
     link: '/ai-for-good/teambuilding'
   },
@@ -92,7 +93,7 @@ const progressItems: ProgressItem[] = [
     id: '7',
     title: 'Design Thinking',
     type: 'activity',
-    status: 'not-started',
+    status: 'in-progress',
     duration: '40 min',
     link: '/ai-for-good/mind-map'
   },
@@ -206,6 +207,7 @@ const MindMapPage: React.FC = () => {
   const personaMessagesEndRef = useRef<HTMLDivElement>(null);
   const problemMessagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const [showVideo, setShowVideo] = useState(true);
 
   // Simple cleanup function for WebSocket
   const cleanupWebSocket = (wsRef: React.MutableRefObject<WebSocket | null>) => {
@@ -626,6 +628,41 @@ const MindMapPage: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-gray-100">
+      {/* Video Introduction Popup */}
+      {showVideo && (
+        <div className="bg-black bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold">Welcome to Design Thinking!</h3>
+              <button 
+                onClick={() => setShowVideo(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <span style={{fontSize: 24, lineHeight: 1}}>&times;</span>
+              </button>
+            </div>
+            <div className="aspect-video bg-gray-900 rounded-lg mb-4 relative overflow-hidden">
+              <iframe
+                src="https://www.youtube.com/embed/MD0a_8CGTCw"
+                title="Design Thinking Introduction"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="absolute top-0 left-0 w-full h-full rounded-lg"
+              ></iframe>
+            </div>
+            <p className="text-gray-600 mb-4">
+              Learn how to use Design Thinking to solve problems creatively and empathetically.
+            </p>
+            <button
+              onClick={() => setShowVideo(false)}
+              className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition"
+            >
+              Get Started
+            </button>
+          </div>
+        </div>
+      )}
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden pt-12">
         {/* Instructions */}
@@ -633,6 +670,13 @@ const MindMapPage: React.FC = () => {
           <div className="flex justify-between items-start mb-4">
             <h2 className="text-2xl font-bold">Design Thinking Workshop</h2>
             <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setShowVideo(true)}
+                className="flex items-center text-purple-600 hover:text-purple-700"
+              >
+                <Video size={16} className="mr-2" />
+                Watch Intro
+              </button>
               <button
                 onClick={() => {/* TODO: Add reset functionality */}}
                 className="flex items-center text-red-600 hover:text-red-700"
