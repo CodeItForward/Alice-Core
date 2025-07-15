@@ -499,7 +499,7 @@ const PromptEngineeringPage: React.FC = () => {
           <div className="w-1/2 border-r border-gray-200 flex flex-col bg-white">
             <div className="bg-white border-b border-gray-200 p-4">
               <h4 className="text-lg font-semibold text-gray-800">AI Chat Interface</h4>
-              <p className="text-sm text-gray-600">Generate images for your comic strip</p>
+              <p className="text-sm text-gray-600">Use the chat window below to practice prompt engineering with Alice.  Alice can help you come up with ideas for your script and can even help generate images for your comic!  Just remember to use the best practices you just read about.</p>
             </div>
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
               {messages.map((message) => {

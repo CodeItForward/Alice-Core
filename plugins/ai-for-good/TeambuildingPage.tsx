@@ -574,7 +574,7 @@ const TeambuildingPage: React.FC = () => {
                 ) : membersError ? (
                   <div className="text-red-500">{membersError}</div>
                 ) : teamMembers.length > 0 ? (
-                  <div className="flex flex-wrap gap-3">
+                  <div className="flex flex-wrap gap-3 mb-2">
                     {teamMembers.map(member => (
                       <span key={member.TeamMemberId} className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">
                         {member.user.DisplayName}
@@ -584,6 +584,19 @@ const TeambuildingPage: React.FC = () => {
                 ) : (
                   <div className="text-gray-500">No team members found.</div>
                 )}
+                {/* Analyze Team Button at the top */}
+                <button
+                  onClick={analyzeTeam}
+                  disabled={isAnalyzing || isLoading}
+                  className={`mt-2 inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 ${isAnalyzing || isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {isAnalyzing ? (
+                    <Activity className="animate-spin w-4 h-4 mr-2" />
+                  ) : (
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                  )}
+                  Analyze Team
+                </button>
               </div>
             )}
 
