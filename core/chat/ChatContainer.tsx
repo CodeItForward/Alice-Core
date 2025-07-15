@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import { useMessages } from '../context/MessageContext';
+import { useAuth } from '../context/AuthContext';
 
 interface ChatContainerProps {
   openAIApiKey?: string;
@@ -9,8 +10,20 @@ interface ChatContainerProps {
 
 const ChatContainer: React.FC<ChatContainerProps> = ({ openAIApiKey }) => {
   const { messages } = useMessages();
+  const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
+  // Get personal team/channel IDs for the current user
+  const personalTeamId = user?.PersonalTeamId;
+  const personalChannelId = user?.PersonalChannelId;
+
+  // For debugging, log the IDs
+  useEffect(() => {
+    if (personalTeamId && personalChannelId) {
+      console.log('Using personal chat:', { personalTeamId, personalChannelId });
+    }
+  }, [personalTeamId, personalChannelId]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };

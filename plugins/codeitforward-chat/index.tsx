@@ -26,10 +26,8 @@ const CodeItForwardChatPage: React.FC = () => {
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeUsers, setActiveUsers] = useState(0);
-  const [channels, setChannels] = useState<Channel[]>([]);
-  const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null);
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const [team, setTeam] = useState<Team | null>(null);
+  const [channel, setChannel] = useState<Channel | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isConnectingRef = useRef(false);
@@ -71,178 +69,128 @@ const CodeItForwardChatPage: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Load teams for user
+  // On mount, fetch team and channel info for display (not for selection)
   useEffect(() => {
-    const loadTeams = async () => {
-      if (!user) return;
-      
+    if (!user) return;
+    const fetchInfo = async () => {
+      setIsLoading(true);
       try {
-        console.log('Loading teams for user:', user.id);
-        const fetchedTeams = await getUserTeams(parseInt(user.id));
-        console.log('Loaded teams:', fetchedTeams);
-        setTeams(fetchedTeams);
-        // Select the default team if available
-        const defaultTeam = fetchedTeams.find(t => t.TeamId === 1) || fetchedTeams[0];
-        if (defaultTeam) {
-          setSelectedTeam(defaultTeam);
-        }
+        const [teamInfo, channelInfo] = await Promise.all([
+          getUserTeams(parseInt(user.id)).then(teams => teams.find(t => t.TeamId === user.PersonalTeamId) || null),
+          getTeamChannels(user.PersonalTeamId).then(chs => chs.find(ch => ch.ChannelId === user.PersonalChannelId) || null)
+        ]);
+        setTeam(teamInfo);
+        setChannel(channelInfo);
       } catch (err) {
-        console.error('Error loading teams:', err);
-        setError('Failed to load teams');
-      }
-    };
-
-    loadTeams();
-  }, [user]);
-
-  // Load channels for selected team
-  useEffect(() => {
-    const loadChannels = async () => {
-      if (!selectedTeam) return;
-      
-      try {
-        console.log('Loading channels for team:', selectedTeam.TeamId);
-        const fetchedChannels = await getTeamChannels(selectedTeam.TeamId);
-        console.log('Loaded channels:', fetchedChannels);
-        setChannels(fetchedChannels);
-        // Select the default channel if available
-        const defaultChannel = fetchedChannels.find(ch => ch.IsDefault) || fetchedChannels[0];
-        if (defaultChannel) {
-          setSelectedChannel(defaultChannel);
-        }
-      } catch (err) {
-        console.error('Error loading channels:', err);
-        setError('Failed to load channels');
+        setError('Failed to load team/channel info');
       } finally {
         setIsLoading(false);
       }
     };
+    fetchInfo();
+  }, [user]);
 
-    loadChannels();
-  }, [selectedTeam]);
+  // Always use personal team/channel for chat logic
+  const teamId = user?.PersonalTeamId;
+  const channelId = user?.PersonalChannelId;
 
-  // Load messages when channel changes
+  // Load messages for personal team/channel
   useEffect(() => {
-    if (!selectedChannel || !selectedTeam) return;
-
+    if (!teamId || !channelId) return;
     const loadMessages = async () => {
+      setIsLoading(true);
       try {
-        console.log('Loading messages for channel:', selectedChannel.ChannelId);
-        const initialMessages = await getChannelMessages(selectedTeam.TeamId, selectedChannel.ChannelId, 50, 0);
-        console.log('Loaded initial messages:', initialMessages.length);
-        setMessagesWithLog(() => initialMessages);
+        const initialMessages = await getChannelMessages(teamId, channelId, 50, 0);
+        setMessages(initialMessages);
       } catch (err) {
-        console.error('Error loading messages:', err);
         setError('Failed to load messages');
+      } finally {
+        setIsLoading(false);
       }
     };
-
     loadMessages();
-  }, [selectedChannel, selectedTeam]);
+  }, [teamId, channelId]);
 
-  // WebSocket connection
+  // WebSocket connection for personal team/channel
   useEffect(() => {
-    if (!selectedChannel || !user || !selectedTeam) return;
-
-    const setupWebSocket = () => {
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-        console.log('WebSocket already connected');
-        return;
-      }
-
-      // Store user ID in localStorage for WebSocket connection
-      localStorage.setItem('userId', user.id);
-
-      console.log('Setting up WebSocket connection with teamId:', selectedTeam.TeamId, 'channelId:', selectedChannel.ChannelId);
-      const ws = createWebSocketConnection(
-        selectedTeam.TeamId,
-        selectedChannel.ChannelId,
-        (data: WebSocketMessage) => {
-          // Log all incoming WebSocket messages
-          console.log('WebSocket received message:', data);
-          
-          // Defensive: skip duplicate messages by message_id
-          if (data.message_id && processedMessageIds.current.has(data.message_id)) {
-            console.log('Skipping duplicate message_id:', data.message_id);
-            return;
-          }
-          if (data.message_id) {
-            processedMessageIds.current.add(data.message_id);
-          }
-
-          // Clear any existing errors when we receive a message
-          setError(null);
-
-          switch (data.type) {
-            case 'message':
-            case 'text':
-            case 'video':
-            case 'image':
-              if (data.message_id && data.content && data.user_id && data.created_at) {
-                setMessagesWithLog(prevMessages => {
-                  // Check if message already exists
-                  if (prevMessages.some(msg => msg.MessageId === data.message_id)) {
-                    return prevMessages;
-                  }
-
-                  // Create new message
-                  const newMessage: ChatMessage = {
-                    MessageId: data.message_id!,
-                    ChannelId: selectedChannel.ChannelId,
+    if (!teamId || !channelId || !user) return;
+    if (wsSetupRef.current) return;
+    wsSetupRef.current = true;
+    // Cleanup existing connection
+    if (wsRef.current) {
+      wsRef.current.onclose = null;
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+    localStorage.setItem('userId', user.id);
+    const ws = createWebSocketConnection(
+      teamId,
+      channelId,
+      (data: WebSocketMessage) => {
+        if (data.message_id && processedMessageIds.current.has(data.message_id)) return;
+        if (data.message_id) processedMessageIds.current.add(data.message_id);
+        setError(null);
+        switch (data.type) {
+          case 'message':
+          case 'text':
+          case 'video':
+          case 'image':
+            if (data.message_id && data.content && data.user_id && data.created_at) {
+              setMessages(prevMessages => {
+                if (prevMessages.some(msg => msg.MessageId === data.message_id)) return prevMessages;
+                const newMessage: ChatMessage = {
+                  MessageId: data.message_id!,
+                  ChannelId: channelId,
+                  UserId: data.user_id!,
+                  Text: data.content!,
+                  Timestamp: data.created_at!,
+                  ReplyToMessageId: null,
+                  user: {
                     UserId: data.user_id!,
-                    Text: data.content!,
-                    Timestamp: data.created_at!,
-                    ReplyToMessageId: null,
-                    user: {
-                      UserId: data.user_id!,
-                      DisplayName: data.display_name || (data.user_id === 1 ? 'Alice' : 'User ' + data.user_id),
-                      Email: ''
-                    },
-                    type: data.type,
-                    video_url: data.video_url,
-                    image_url: data.image_url
-                  };
-
-                  // Add new message to the list
-                  return [...prevMessages, newMessage];
-                });
-              }
-              break;
-            case 'join':
-            case 'user_joined':
-              setActiveUsers(prev => prev + 1);
-              break;
-            case 'user_left':
-              setActiveUsers(prev => Math.max(0, prev - 1));
-              break;
-            case 'error':
-              setError(data.message || 'An error occurred');
-              break;
-          }
-        },
-        (error) => {
-          console.error('WebSocket error:', error);
-          setError('Connection error occurred');
-        },
-        (event) => {
-          console.log('WebSocket closed:', event.code, event.reason);
-          if (event.code === 1006) {
-            setError('Connection lost. Please refresh the page to reconnect.');
-          }
+                    DisplayName: data.display_name || (data.user_id === 1 ? 'Alice' : 'User ' + data.user_id),
+                    Email: ''
+                  },
+                  type: data.type,
+                  video_url: data.video_url,
+                  image_url: data.image_url
+                };
+                return [...prevMessages, newMessage];
+              });
+            }
+            break;
+          case 'join':
+          case 'user_joined':
+            setActiveUsers(prev => prev + 1);
+            break;
+          case 'user_left':
+            setActiveUsers(prev => Math.max(0, prev - 1));
+            break;
+          case 'error':
+            setError(data.message || 'An error occurred');
+            break;
         }
-      );
-
-      wsRef.current = ws;
-      return () => {
-        if (wsRef.current) {
-          wsRef.current.close();
-          wsRef.current = null;
+      },
+      (error) => setError('Connection error occurred'),
+      (event) => {
+        if (event.code === 1006) setError('Connection lost. Please refresh the page to reconnect.');
+      },
+      (ws) => {
+        // Send join message with user_id as soon as the connection is open
+        if (user && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'join', user_id: parseInt(user.id) }));
+          console.log('Sent join message with user_id:', user.id);
         }
-      };
+      }
+    );
+    wsRef.current = ws;
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+      wsSetupRef.current = false;
     };
-
-    setupWebSocket();
-  }, [selectedChannel, user, selectedTeam]);
+  }, [teamId, channelId, user]);
 
   const handleSendMessage = async (e?: React.FormEvent) => {
     // Prevent form submission if event is provided
@@ -252,10 +200,16 @@ const CodeItForwardChatPage: React.FC = () => {
 
     if (!newMessage.trim() || !user) return;
 
+    // Prepend @alice if not already present (case-insensitive)
+    let outgoingMessage = newMessage.trim();
+    if (!/^@alice\b/i.test(outgoingMessage)) {
+      outgoingMessage = `@alice ${outgoingMessage}`;
+    }
+
     // Check if the message is requesting an image generation
-    const isImageRequest = newMessage.toLowerCase().includes('generate image') || 
-                          newMessage.toLowerCase().includes('create image') ||
-                          newMessage.toLowerCase().includes('draw');
+    const isImageRequest = outgoingMessage.toLowerCase().includes('generate image') || 
+                          outgoingMessage.toLowerCase().includes('create image') ||
+                          outgoingMessage.toLowerCase().includes('draw');
 
     if (isImageRequest) {
       setIsGeneratingImage(true);
@@ -263,9 +217,9 @@ const CodeItForwardChatPage: React.FC = () => {
 
     const tempMessage = {
       MessageId: Date.now(),
-      ChannelId: selectedChannel?.ChannelId || '',
+      ChannelId: channelId || '',
       UserId: parseInt(user.id),
-      Text: newMessage.trim(),
+      Text: outgoingMessage,
       Timestamp: new Date().toISOString(),
       ReplyToMessageId: null,
       user: {
@@ -281,7 +235,7 @@ const CodeItForwardChatPage: React.FC = () => {
       if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
         const message = {
           type: isImageRequest ? 'image' : 'message',
-          text: newMessage.trim(),
+          text: outgoingMessage,
           user_id: parseInt(user.id),
           reply_to_message_id: null,
           temp_id: tempMessage.MessageId
@@ -328,24 +282,8 @@ const CodeItForwardChatPage: React.FC = () => {
         
         {/* Team and Channel Selection */}
         <div className="flex items-center space-x-4">
-          {/* Team Selection */}
-          <div className="relative">
-            <select
-              value={selectedTeam?.TeamId || ''}
-              onChange={(e) => {
-                const team = teams.find(t => t.TeamId === parseInt(e.target.value));
-                setSelectedTeam(team || null);
-              }}
-              className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            >
-              {teams.map((team) => (
-                <option key={team.TeamId} value={team.TeamId}>
-                  {team.Name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-          </div>
+          {team && <span className="text-sm text-gray-600">Team: {team.Name}</span>}
+          {channel && <span className="text-sm text-gray-600">Channel: {channel.Name}</span>}
         </div>
       </div>
 
@@ -373,7 +311,7 @@ const CodeItForwardChatPage: React.FC = () => {
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-500">
-            <p>No messages yet. Start the conversation!</p>
+            <p>Hi, I'm Alice.  Use this space to have an individual chat with me.  You can ask me anything related to the course.</p>
           </div>
         ) : (
           <>

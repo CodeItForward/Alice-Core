@@ -98,7 +98,6 @@ export function AiForGoodPage() {
   useEffect(() => {
     const loadTeams = async () => {
       if (!user) return;
-      
       try {
         console.log('Loading teams for user:', user.id);
         const fetchedTeams = await getUserTeams(parseInt(user.id));
@@ -114,7 +113,6 @@ export function AiForGoodPage() {
         setError('Failed to load teams');
       }
     };
-
     loadTeams();
   }, [user]);
 
@@ -122,7 +120,6 @@ export function AiForGoodPage() {
   useEffect(() => {
     const fetchChannels = async () => {
       if (!selectedTeam) return;
-      
       try {
         const fetchedChannels = await getTeamChannels(selectedTeam.TeamId);
         setChannels(fetchedChannels);
@@ -138,7 +135,6 @@ export function AiForGoodPage() {
         setIsLoading(false);
       }
     };
-
     fetchChannels();
   }, [selectedTeam]);
 
