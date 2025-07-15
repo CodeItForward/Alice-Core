@@ -42,6 +42,19 @@ interface TeamAnalysis {
   themes: TeamTheme[];
 }
 
+// Add type for team member
+interface TeamMember {
+  TeamMemberId: number;
+  TeamId: number;
+  Role: string | null;
+  JoinedAt: string;
+  user: {
+    UserId: number;
+    DisplayName: string;
+    Email: string;
+  };
+}
+
 
 
 
@@ -65,6 +78,9 @@ const TeambuildingPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const analysisSectionRef = useRef<HTMLDivElement>(null);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [isLoadingMembers, setIsLoadingMembers] = useState(false);
+  const [membersError, setMembersError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<TeambuildingForm>({
     firstName: '',
@@ -239,6 +255,21 @@ const TeambuildingPage: React.FC = () => {
   useEffect(() => {
     setShowAnalysis(false);
     setAnalysisResults(null);
+  }, [selectedTeam]);
+
+  // Fetch team members when selectedTeam changes
+  useEffect(() => {
+    if (!selectedTeam) return;
+    setIsLoadingMembers(true);
+    setMembersError(null);
+    fetch(`https://restrictedchat.purplemeadow-b77df452.eastus.azurecontainerapps.io/teams/${selectedTeam.TeamId}/members`)
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch team members');
+        return res.json();
+      })
+      .then((data: TeamMember[]) => setTeamMembers(data))
+      .catch(err => setMembersError(err.message))
+      .finally(() => setIsLoadingMembers(false));
   }, [selectedTeam]);
 
   const handleInputChange = (field: keyof TeambuildingForm, value: string) => {
@@ -531,6 +562,28 @@ const TeambuildingPage: React.FC = () => {
                   <h3 className="text-lg font-semibold text-gray-800 mb-2">Analyzing Your Team</h3>
                   <p className="text-gray-600">We're analyzing your team's responses to identify themes and suggest activities...</p>
                 </div>
+              </div>
+            )}
+
+            {/* Team Members Display */}
+            {selectedTeam && (
+              <div className="mb-4">
+                <h2 className="text-lg font-semibold mb-2 flex items-center"><Users className="w-5 h-5 mr-2" />Team Members</h2>
+                {isLoadingMembers ? (
+                  <div className="text-gray-500">Loading team members...</div>
+                ) : membersError ? (
+                  <div className="text-red-500">{membersError}</div>
+                ) : teamMembers.length > 0 ? (
+                  <div className="flex flex-wrap gap-3">
+                    {teamMembers.map(member => (
+                      <span key={member.TeamMemberId} className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">
+                        {member.user.DisplayName}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-gray-500">No team members found.</div>
+                )}
               </div>
             )}
 

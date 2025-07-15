@@ -64,10 +64,19 @@ const CodeItForwardChatPage: React.FC = () => {
     wsSetupRef.current = false;
   };
 
+  // Always use personal team/channel for chat logic
+  const teamId = user?.PersonalTeamId;
+  const channelId = user?.PersonalChannelId;
+
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Scroll to bottom when channel changes (i.e., when channelId changes)
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+  }, [channelId]);
 
   // On mount, fetch team and channel info for display (not for selection)
   useEffect(() => {
@@ -89,10 +98,6 @@ const CodeItForwardChatPage: React.FC = () => {
     };
     fetchInfo();
   }, [user]);
-
-  // Always use personal team/channel for chat logic
-  const teamId = user?.PersonalTeamId;
-  const channelId = user?.PersonalChannelId;
 
   // Load messages for personal team/channel
   useEffect(() => {
