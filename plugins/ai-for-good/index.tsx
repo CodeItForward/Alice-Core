@@ -12,6 +12,8 @@ import AIEthicsPage from './AIEthicsPage';
 import AiForGoodPage from './AiForGoodPage';
 import Module2WelcomePage from './Module2WelcomePage';
 import Module3WelcomePage from './Module3WelcomePage';
+import Module4WelcomePage from './Module4WelcomePage';
+import AboutAIGoodPage from './AboutAIGoodPage';
 import { Navigate } from 'react-router-dom';
 
 // Wrapper component to enforce role checks
@@ -69,6 +71,8 @@ export default {
       label: 'AI for Good',
       path: '/ai-for-good',
       children: [
+        { label: 'Welcome', path: '/ai-for-good/welcome', icon: <Video size={16} className="text-blue-500" />, type: 'video' },
+        { label: 'About AI for Good', path: '/ai-for-good/about', icon: <BookOpen size={16} className="text-orange-500" />, type: 'reading' },
         {
           label: 'Group Chat',
           path: '/ai-for-good/chat',
@@ -79,7 +83,6 @@ export default {
           path: '/ai-for-good/module-1',
           icon: <BookOpen size={16} className="text-purple-500" />,
           children: [
-            { label: 'Welcome', path: '/ai-for-good/welcome', icon: <Video size={16} className="text-blue-500" />, type: 'video', status: 'completed' },
             { label: 'Intro to AI', path: '/ai-for-good/intro-to-ai', icon: <Video size={16} className="text-blue-500" />, type: 'video', status: 'in-progress' },
             { label: 'Game Time', path: '/ai-for-good/game-time', icon: <Activity size={16} className="text-orange-500" />, type: 'activity', status: 'not-started' },
             { label: 'Prompt Best Practices', path: '/ai-for-good/prompt-best-practices', icon: <BookOpen size={16} className="text-purple-500" />, type: 'reading', status: 'not-started' },
@@ -104,6 +107,14 @@ export default {
           children: [
             { label: 'Module 3 Welcome', path: '/ai-for-good/module-3-welcome', icon: <Video size={16} className="text-blue-500" />, type: 'video', status: 'not-started' }
           ]
+        },
+        {
+          label: 'Module 4',
+          path: '/ai-for-good/module-4',
+          icon: <BookOpen size={16} className="text-pink-500" />,
+          children: [
+            { label: 'Module 4 Welcome', path: '/ai-for-good/module-4-welcome', icon: <Video size={16} className="text-blue-500" />, type: 'video' }
+          ]
         }
       ]
     }
@@ -120,6 +131,8 @@ export default {
     { path: '/ai-for-good/chat', component: withRoleCheck(AiForGoodPage) },
     { path: '/ai-for-good/module-2-welcome', component: withRoleCheck(Module2WelcomePage) },
     { path: '/ai-for-good/module-3-welcome', component: withRoleCheck(Module3WelcomePage) },
+    { path: '/ai-for-good/module-4-welcome', component: withRoleCheck(Module4WelcomePage) },
+    { path: '/ai-for-good/about', component: withRoleCheck(AboutAIGoodPage) },
     { path: '/ai-for-good', component: () => <Navigate to="/ai-for-good/welcome" replace /> }
   ]
 }; 

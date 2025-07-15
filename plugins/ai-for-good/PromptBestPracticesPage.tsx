@@ -40,7 +40,7 @@ const PromptBestPracticesPage: React.FC = () => {
                 <h3 className="text-xl font-semibold mb-4 text-purple-700">The Golden Rules</h3>
                 
                 <div className="space-y-6">
-                  <div className="p-4 bg-blue-50 rounded-lg">
+                  <div className="p-4 rounded-lg">
                     <h4 className="font-semibold text-blue-800 mb-2">1. Be Specific</h4>
                     <p className="text-blue-700 text-sm mb-2">Instead of "Make me a story," try "Write a 200-word story about a robot who learns to paint."</p>
                     <div className="bg-blue-100 p-3 rounded">
@@ -49,7 +49,7 @@ const PromptBestPracticesPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="p-4 bg-green-50 rounded-lg">
+                  <div className="p-4 rounded-lg">
                     <h4 className="font-semibold text-green-800 mb-2">2. Give Context</h4>
                     <p className="text-green-700 text-sm mb-2">Help the AI understand the situation and your goals.</p>
                     <div className="bg-green-100 p-3 rounded">
@@ -58,7 +58,7 @@ const PromptBestPracticesPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="p-4 bg-purple-50 rounded-lg">
+                  <div className="p-4 rounded-lg">
                     <h4 className="font-semibold text-purple-800 mb-2">3. Set the Format</h4>
                     <p className="text-purple-700 text-sm mb-2">Tell the AI exactly how you want the response formatted.</p>
                     <div className="bg-purple-100 p-3 rounded">
@@ -67,7 +67,7 @@ const PromptBestPracticesPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="p-4 bg-orange-50 rounded-lg">
+                  <div className="p-4 rounded-lg">
                     <h4 className="font-semibold text-orange-800 mb-2">4. Use Examples</h4>
                     <p className="text-orange-700 text-sm mb-2">Show the AI what you want with concrete examples.</p>
                     <div className="bg-orange-100 p-3 rounded">

@@ -52,11 +52,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, pluginNavLinks
   function renderNavLinks(links: SidebarNavLink[], parentPath = ''): React.ReactNode[] {
     const activeIdx = findActiveIndex(links, location.pathname);
     return links.map((link: SidebarNavLink, idx: number) => {
+      // No progress status for Welcome or Group Chat
+      const isNoStatus = link.label === 'Welcome' || link.label === 'Group Chat';
       let statusOverride: 'completed' | 'active' | undefined;
-      if (activeIdx === idx) {
-        statusOverride = 'active';
-      } else if (activeIdx > -1 && idx < activeIdx) {
-        statusOverride = 'completed';
+      if (!isNoStatus) {
+        if (activeIdx === idx) {
+          statusOverride = 'active';
+        } else if (activeIdx > -1 && idx < activeIdx) {
+          statusOverride = 'completed';
+        }
       }
       if (link.children) {
         return (
@@ -86,6 +90,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, pluginNavLinks
             status={statusOverride || link.status}
             type={link.type}
             isMinimized={isMinimized}
+            noStatus={isNoStatus}
           />
         );
       }
@@ -227,11 +232,10 @@ const SidebarLink: React.FC<{
   status?: string;
   type?: string;
   isMinimized?: boolean;
-}> = ({ to, icon, label, status, type, isMinimized }) => {
+  noStatus?: boolean;
+}> = ({ to, icon, label, status, type, isMinimized, noStatus }) => {
   const location = useLocation();
   const isActive = location.pathname === to;
-  // Determine if this link is above the active link in the nav tree
-  // We'll use status === 'completed' for green, isActive for yellow
   const CheckCircle = ({ size, className }: { size: number; className: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
       <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
@@ -246,12 +250,16 @@ const SidebarLink: React.FC<{
   );
   let statusIcon = null;
   let statusClasses = 'text-gray-600 hover:bg-purple-50 hover:text-purple-800';
-  if (isActive) {
-    statusClasses = 'bg-yellow-50 text-yellow-800';
-    statusIcon = <Clock size={16} className="text-yellow-500" />;
-  } else if (status === 'completed') {
-    statusClasses = 'bg-green-50 text-green-800';
-    statusIcon = <CheckCircle size={16} className="text-green-500" />;
+  if (!noStatus) {
+    if (isActive && status === 'active') {
+      statusClasses = 'bg-yellow-50 text-yellow-800';
+      statusIcon = <Clock size={16} className="text-yellow-500" />;
+    } else if (status === 'completed') {
+      statusClasses = 'bg-green-50 text-green-800';
+      statusIcon = <CheckCircle size={16} className="text-green-500" />;
+    }
+  } else if (noStatus && isActive) {
+    statusClasses = 'bg-purple-50 text-purple-800';
   }
   return (
     <Link 
