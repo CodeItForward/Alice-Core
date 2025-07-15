@@ -52,8 +52,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, pluginNavLinks
   function renderNavLinks(links: SidebarNavLink[], parentPath = ''): React.ReactNode[] {
     const activeIdx = findActiveIndex(links, location.pathname);
     return links.map((link: SidebarNavLink, idx: number) => {
-      // No progress status for Welcome or Group Chat
-      const isNoStatus = link.label === 'Welcome' || link.label === 'Group Chat';
+      // No progress status for Welcome, Group Chat, or About AI for Good
+      const isNoStatus = link.label === 'Welcome' || link.label === 'Group Chat' || link.label === 'About AI for Good';
       let statusOverride: 'completed' | 'active' | undefined;
       if (!isNoStatus) {
         if (activeIdx === idx) {
