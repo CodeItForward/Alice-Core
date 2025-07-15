@@ -2,7 +2,7 @@ import React from 'react';
 
 const TestFlexLayout: React.FC = () => {
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col h-full bg-gray-50">
       {/* Row 1: Sidebar + Main */}
       <div className="flex flex-col md:flex-row flex-1 min-h-0">
         <div className="bg-blue-200 md:w-56 p-4 flex flex-col">Sidebar</div>

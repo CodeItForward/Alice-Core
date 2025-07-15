@@ -1,12 +1,6 @@
 import React from 'react';
-import AiForGoodPage from './AiForGoodPage';
 import { useUser } from '@clerk/clerk-react';
-import AchievementsPage from './AchievementsPage';
-import WorkspacePage from './WorkspacePage';
-import KnowledgebasePage from './KnowledgebasePage';
-import ProjectBoardPage from './ProjectBoardPage';
-import TestFlexLayout from './TestFlexLayout';
-import TeamSettingsPage from './TeamSettingsPage';
+import { Video, BookOpen, Activity } from 'lucide-react';
 import WelcomePage from './WelcomePage';
 import IntroToAIPage from './IntroToAIPage';
 import PromptBestPracticesPage from './PromptBestPracticesPage';
@@ -71,29 +65,72 @@ export default {
     {
       label: 'AI for Good',
       path: '/ai-for-good',
+      icon: <Activity size={18} className="text-orange-500" />,
       children: [
-        { label: 'Journey Hub', path: '/ai-for-good/welcome' },
-        { label: 'Team Settings', path: '/ai-for-good/team-settings' },
-        { label: 'Team Chat', path: '/ai-for-good/chat' },
-        { label: 'Achievements', path: '/ai-for-good/achievements' },
-        { label: 'Workspace', path: '/ai-for-good/workspace' },
-        { label: 'Knowledgebase', path: '/ai-for-good/knowledgebase' },
-        { label: 'Project Board', path: '/ai-for-good/project-board' },
+        { 
+          label: 'Welcome', 
+          path: '/ai-for-good/welcome',
+          icon: <Video size={16} className="text-blue-500" />,
+          type: 'video',
+          status: 'completed'
+        },
+        { 
+          label: 'Intro to AI', 
+          path: '/ai-for-good/intro-to-ai',
+          icon: <Video size={16} className="text-blue-500" />,
+          type: 'video',
+          status: 'in-progress'
+        },
+        { 
+          label: 'Game Time', 
+          path: '/ai-for-good/game-time',
+          icon: <Activity size={16} className="text-orange-500" />,
+          type: 'activity',
+          status: 'not-started'
+        },
+        { 
+          label: 'Prompt Best Practices', 
+          path: '/ai-for-good/prompt-best-practices',
+          icon: <BookOpen size={16} className="text-purple-500" />,
+          type: 'reading',
+          status: 'not-started'
+        },
+        { 
+          label: 'Prompt Engineering', 
+          path: '/ai-for-good/prompt-engineering',
+          icon: <Activity size={16} className="text-orange-500" />,
+          type: 'activity',
+          status: 'not-started'
+        },
+        { 
+          label: 'Teambuilding', 
+          path: '/ai-for-good/teambuilding',
+          icon: <Activity size={16} className="text-orange-500" />,
+          type: 'activity',
+          status: 'not-started'
+        },
+        { 
+          label: 'Design Thinking', 
+          path: '/ai-for-good/mind-map',
+          icon: <Activity size={16} className="text-orange-500" />,
+          type: 'activity',
+          status: 'not-started'
+        },
+        { 
+          label: 'AI Safety', 
+          path: '/ai-for-good/ai-ethics',
+          icon: <BookOpen size={16} className="text-purple-500" />,
+          type: 'reading',
+          status: 'not-started'
+        },
       ]
     }
   ],
   routes: [
-    { path: '/ai-for-good/chat', component: withRoleCheck(AiForGoodPage) },
     { path: '/ai-for-good/welcome', component: withRoleCheck(WelcomePage) },
-    { path: '/ai-for-good/team-settings', component: withRoleCheck(TeamSettingsPage) },
-    { path: '/ai-for-good/achievements', component: withRoleCheck(AchievementsPage) },
-    { path: '/ai-for-good/workspace', component: withRoleCheck(WorkspacePage) },
-    { path: '/ai-for-good/knowledgebase', component: withRoleCheck(KnowledgebasePage) },
-    { path: '/ai-for-good/project-board', component: withRoleCheck(ProjectBoardPage) },
-    { path: '/ai-for-good/test-flex', component: withRoleCheck(TestFlexLayout) },
     { path: '/ai-for-good/intro-to-ai', component: withRoleCheck(IntroToAIPage) },
-    { path: '/ai-for-good/prompt-best-practices', component: withRoleCheck(PromptBestPracticesPage) },
     { path: '/ai-for-good/game-time', component: withRoleCheck(GameTimePage) },
+    { path: '/ai-for-good/prompt-best-practices', component: withRoleCheck(PromptBestPracticesPage) },
     { path: '/ai-for-good/prompt-engineering', component: withRoleCheck(PromptEngineeringPage) },
     { path: '/ai-for-good/teambuilding', component: withRoleCheck(TeambuildingPage) },
     { path: '/ai-for-good/mind-map', component: withRoleCheck(MindMapPage) },

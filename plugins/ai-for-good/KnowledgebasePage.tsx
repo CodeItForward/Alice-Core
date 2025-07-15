@@ -33,7 +33,7 @@ const KnowledgebasePage: React.FC = () => {
   return (
     <div className="flex h-full bg-gray-50" style={{ minHeight: '500px' }}>
       {/* Sidebar */}
-      <div className="w-56 bg-white border-r border-gray-200 flex flex-col">
+              <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
         <div className="p-4 font-bold text-lg border-b border-gray-100">Categories</div>
         <ul className="flex-1 overflow-auto">
           {categories.map(cat => (

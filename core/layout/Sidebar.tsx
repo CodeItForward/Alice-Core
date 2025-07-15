@@ -109,6 +109,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, pluginNavLinks
                           key={`${child.path}-${childIdx}`}
                           to={child.path}
                           label={child.label}
+                          icon={child.icon}
+                          status={child.status}
+                          type={child.type}
                           isMinimized={isMinimized}
                         />
                       );
@@ -149,16 +152,61 @@ const SidebarLink: React.FC<{
   to: string; 
   icon?: React.ReactNode; 
   label: string;
+  status?: string;
+  type?: string;
   isMinimized?: boolean;
-}> = ({ to, icon, label, isMinimized }) => {
+}> = ({ to, icon, label, status, type, isMinimized }) => {
+  // Import icons for status indicators
+  const CheckCircle = ({ size, className }: { size: number; className: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+      <path d="m9 11 3 3L22 4"></path>
+    </svg>
+  );
+  
+  const Clock = ({ size, className }: { size: number; className: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <circle cx="12" cy="12" r="10"></circle>
+      <polyline points="12,6 12,12 16,14"></polyline>
+    </svg>
+  );
+
+  const getStatusIcon = () => {
+    if (status === 'completed') {
+      return <CheckCircle size={16} className="text-green-500" />;
+    } else if (status === 'in-progress') {
+      return <Clock size={16} className="text-yellow-500" />;
+    }
+    return null;
+  };
+
+  const getStatusClasses = () => {
+    if (status === 'completed') {
+      return 'bg-green-50 text-green-800';
+    } else if (status === 'in-progress') {
+      return 'bg-yellow-50 text-yellow-800';
+    }
+    return 'text-gray-600 hover:bg-purple-50 hover:text-purple-800';
+  };
+
   return (
     <Link 
       to={to}
-      className={`flex items-center w-full px-3 py-2 text-gray-700 rounded-md hover:bg-purple-50 hover:text-purple-800 transition-colors duration-200 group ${isMinimized ? 'justify-center' : ''}`}
+      className={`flex items-center w-full px-3 py-2 rounded transition-colors duration-200 group ${getStatusClasses()} ${isMinimized ? 'justify-center' : ''}`}
       title={isMinimized ? label : undefined}
     >
-      {icon && <span className={`text-gray-500 group-hover:text-purple-800 transition-colors duration-200 ${!isMinimized ? 'mr-3' : ''}`}>{icon}</span>}
-      {!isMinimized && <span className="font-medium">{label}</span>}
+      {!isMinimized && status && type ? (
+        <div className="flex items-center space-x-2 w-full">
+          {icon}
+          <span className="flex-1">{label}</span>
+          {getStatusIcon()}
+        </div>
+      ) : (
+        <>
+          {icon && <span className={`text-gray-500 group-hover:text-purple-800 transition-colors duration-200 ${!isMinimized ? 'mr-3' : ''}`}>{icon}</span>}
+          {!isMinimized && <span className="font-medium">{label}</span>}
+        </>
+      )}
     </Link>
   );
 };

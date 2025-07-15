@@ -626,52 +626,6 @@ const MindMapPage: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-gray-100">
-      {/* Sidebar */}
-      <div className="w-64 bg-white border-r border-gray-200 p-4">
-        <h2 className="text-xl font-bold mb-4 text-gray-800">Your Progress</h2>
-        
-        {/* Day 1 Section */}
-        <div className="mb-4">
-          <button
-            onClick={() => setIsDay1Expanded(!isDay1Expanded)}
-            className="flex items-center w-full text-left px-3 py-2 text-gray-700 hover:bg-gray-50 rounded"
-          >
-            {isDay1Expanded ? (
-              <ChevronDown size={16} className="mr-2" />
-            ) : (
-              <ChevronRight size={16} className="mr-2" />
-            )}
-            <span className="font-semibold">Day 1</span>
-          </button>
-          
-          {isDay1Expanded && (
-            <div className="mt-2 space-y-2 pl-4">
-              {progressItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => handleItemClick(item)}
-                  className={`flex items-center w-full text-left px-3 py-2 rounded ${
-                    selectedItem?.id === item.id
-                      ? 'bg-purple-100 text-purple-800'
-                      : item.status === 'completed'
-                      ? 'bg-green-50 text-green-800'
-                      : item.status === 'in-progress'
-                      ? 'bg-yellow-50 text-yellow-800'
-                      : 'text-gray-600 hover:bg-purple-50'
-                  }`}
-                >
-                  <div className="flex items-center space-x-2">
-                    {getTypeIcon(item.type)}
-                    <span className="flex-1">{item.title}</span>
-                    <StatusIndicator status={item.status} />
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden pt-12">
         {/* Instructions */}

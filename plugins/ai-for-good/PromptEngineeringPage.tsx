@@ -1,17 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Video, MessageSquare, Image as ImageIcon, Save, X, BookOpen, Activity, ChevronDown, ChevronRight, CheckCircle, Clock, Loader2, Bot, User as UserIcon } from 'lucide-react';
+import { ArrowRight, MessageSquare, Image as ImageIcon, Save, X, Loader2, Bot, User as UserIcon, Video } from 'lucide-react';
 import { useAuth } from '../../core/context/AuthContext';
 import { getTeamChannels, getChannelMessages, postMessage, createWebSocketConnection, type Channel, type ChatMessage, type WebSocketMessage, getComicStrip, getUserComicStrips, createComicStrip, updateComicStrip, type ComicStrip } from '../../core/services/api';
 
-interface ProgressItem {
-  id: string;
-  title: string;
-  type: 'video' | 'reading' | 'activity';
-  status: 'not-started' | 'in-progress' | 'completed';
-  duration: string;
-  link: string;
-}
+
 
 interface ComicPanel {
   id: number;
@@ -19,77 +12,13 @@ interface ComicPanel {
   caption: string;
 }
 
-const progressItems: ProgressItem[] = [
-  {
-    id: 'welcome',
-    title: 'Welcome to AI for Good',
-    type: 'video',
-    status: 'completed',
-    duration: '5 min',
-    link: '/ai-for-good/welcome'
-  },
-  {
-    id: 'intro',
-    title: 'Intro to AI',
-    type: 'video',
-    status: 'completed',
-    duration: '10 min',
-    link: '/ai-for-good/intro'
-  },
-  {
-    id: 'game-time',
-    title: 'Game Time! Group Activity',
-    type: 'activity',
-    status: 'completed',
-    duration: '20 min',
-    link: '/ai-for-good/game-time'
-  },
-  {
-    id: 'prompt-best-practices',
-    title: 'Prompt Engineering Best Practices',
-    type: 'reading',
-    status: 'completed',
-    duration: '15 min',
-    link: '/ai-for-good/prompt-best-practices'
-  },
-  {
-    id: 'prompt-engineering',
-    title: 'Prompt Engineering Activity',
-    type: 'activity',
-    status: 'in-progress',
-    duration: '30 min',
-    link: '/ai-for-good/prompt-engineering'
-  },
-  {
-    id: 'teambuilding',
-    title: 'Teambuilding',
-    type: 'activity',
-    status: 'not-started',
-    duration: '25 min',
-    link: '/ai-for-good/teambuilding'
-  },
-  {
-    id: 'mind-map',
-    title: 'Design Thinking',
-    type: 'activity',
-    status: 'not-started',
-    duration: '20 min',
-    link: '/ai-for-good/mind-map'
-  },
-  {
-    id: 'ai-ethics',
-    title: 'Take Home: AI Safety',
-    type: 'reading',
-    status: 'not-started',
-    duration: '15 min',
-    link: '/ai-for-good/ai-ethics'
-  }
-];
+
+
 
 const PromptEngineeringPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [selectedItem, setSelectedItem] = useState<ProgressItem | null>(null);
+
   const [comicPanels, setComicPanels] = useState<ComicPanel[]>([
     { id: 1, imageUrl: '', caption: '' },
     { id: 2, imageUrl: '', caption: '' },
@@ -104,7 +33,7 @@ const PromptEngineeringPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showVideo, setShowVideo] = useState(true);
-  const [isDay1Expanded, setIsDay1Expanded] = useState(true);
+
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [generatingPanelId, setGeneratingPanelId] = useState<number | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -335,21 +264,7 @@ const PromptEngineeringPage: React.FC = () => {
     }
   };
 
-  const handleItemClick = (item: ProgressItem) => {
-    setSelectedItem(item);
-    navigate(item.link);
-  };
 
-  const handleNextClick = () => {
-    if (selectedItem) {
-      const currentIndex = progressItems.findIndex(item => item.id === selectedItem.id);
-      if (currentIndex < progressItems.length - 1) {
-        const nextItem = progressItems[currentIndex + 1];
-        setSelectedItem(nextItem);
-        navigate(nextItem.link);
-      }
-    }
-  };
 
   // Load or create comic strip when component mounts
   useEffect(() => {
@@ -486,10 +401,7 @@ const PromptEngineeringPage: React.FC = () => {
     }
   };
 
-  const nextButtonState = {
-    text: 'Next Activity',
-    disabled: !selectedItem || selectedItem.id === progressItems[progressItems.length - 1].id
-  };
+
 
   // Wrapper to log every setMessages call
   const setMessagesWithLog = (...args: Parameters<typeof setMessages>) => {
@@ -514,61 +426,19 @@ const PromptEngineeringPage: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      {/* Sidebar */}
-      <div className="w-64 bg-white border-r border-gray-200 p-4">
-        <h2 className="text-xl font-bold mb-4 text-gray-800">Your Progress</h2>
-        
-        {/* Day 1 Section */}
-        <div className="mb-4">
-          <button
-            onClick={() => setIsDay1Expanded(!isDay1Expanded)}
-            className="flex items-center w-full text-left px-3 py-2 text-gray-700 hover:bg-gray-50 rounded"
-          >
-            {isDay1Expanded ? (
-              <ChevronDown size={16} className="mr-2" />
-            ) : (
-              <ChevronRight size={16} className="mr-2" />
-            )}
-            <span className="font-semibold">Day 1</span>
-          </button>
-          
-          {isDay1Expanded && (
-            <div className="mt-2 space-y-2 pl-4">
-              {progressItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => handleItemClick(item)}
-                  className={`flex items-center w-full text-left px-3 py-2 rounded ${
-                    selectedItem?.id === item.id
-                      ? 'bg-purple-100 text-purple-800'
-                      : item.status === 'completed'
-                      ? 'bg-green-50 text-green-800'
-                      : item.status === 'in-progress'
-                      ? 'bg-yellow-50 text-yellow-800'
-                      : 'text-gray-600 hover:bg-purple-50'
-                  }`}
-                >
-                  <div className="flex items-center space-x-2">
-                    {item.type === 'video' ? <Video size={16} className="text-blue-500" /> : 
-                     item.type === 'reading' ? <BookOpen size={16} className="text-purple-500" /> : 
-                     <Activity size={16} className="text-orange-500" />}
-                    <span className="flex-1">{item.title}</span>
-                    {item.status === 'completed' ? (
-                      <CheckCircle size={16} className="text-green-500" />
-                    ) : item.status === 'in-progress' ? (
-                      <Clock size={16} className="text-yellow-500" />
-                    ) : null}
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
+    <div className="h-full bg-gray-50">
+      {/* Main Content Area */}
+      <div className="flex flex-col h-full">
+        {/* Header */}
+        <div className="bg-white p-4 border-b border-gray-200">
+          <div className="max-w-6xl mx-auto">
+            <h3 className="text-xl font-bold text-gray-800">Prompt Engineering Activity</h3>
+            <p className="text-gray-500">Learn and practice effective prompt engineering techniques</p>
+          </div>
         </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden pt-12">
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col overflow-hidden">
         {/* Video Introduction */}
         {showVideo && (
           <div className="bg-black bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center">
@@ -603,38 +473,44 @@ const PromptEngineeringPage: React.FC = () => {
 
         {/* Instructions */}
         <div className="bg-white border-b border-gray-200 p-6">
-          <div className="flex justify-between items-start mb-4">
-            <h2 className="text-2xl font-bold">Create Your Comic Strip</h2>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={handleClearComicStrip}
-                className="flex items-center text-red-600 hover:text-red-700"
-              >
-                <X size={16} className="mr-2" />
-                Clear Comic Strip
-              </button>
-              <button
-                onClick={() => setShowVideo(true)}
-                className="flex items-center text-purple-600 hover:text-purple-700"
-              >
-                <Video size={16} className="mr-2" />
-                Watch Intro
-              </button>
+          <div className="max-w-6xl mx-auto">
+            <div className="flex justify-between items-start mb-4">
+              <h2 className="text-2xl font-bold">Create Your Comic Strip</h2>
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={handleClearComicStrip}
+                  className="flex items-center text-red-600 hover:text-red-700"
+                >
+                  <X size={16} className="mr-2" />
+                  Clear Comic Strip
+                </button>
+                <button
+                  onClick={() => setShowVideo(true)}
+                  className="flex items-center text-purple-600 hover:text-purple-700"
+                >
+                  <Video size={16} className="mr-2" />
+                  Watch Intro
+                </button>
+              </div>
             </div>
-          </div>
-          <div className="prose max-w-none">
-            <p className="text-gray-600">
-              Use the chat interface below to work with AI to generate images for your comic strip.
-              Each image should tell part of your story. Add captions to complete your narrative.
-            </p>
+            <div className="prose max-w-none">
+              <p className="text-gray-600">
+                Use the chat interface below to work with AI to generate images for your comic strip.
+                Each image should tell part of your story. Add captions to complete your narrative.
+              </p>
+            </div>
           </div>
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex overflow-hidden bg-gray-50">
           {/* Chat Interface */}
-          <div className="w-1/2 border-r border-gray-200 flex flex-col">
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="w-1/2 border-r border-gray-200 flex flex-col bg-white">
+            <div className="bg-white border-b border-gray-200 p-4">
+              <h4 className="text-lg font-semibold text-gray-800">AI Chat Interface</h4>
+              <p className="text-sm text-gray-600">Generate images for your comic strip</p>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
               {messages.map((message) => {
                 const isAlice = message.user.UserId === 1;
                 const isCurrentUser = user && message.user.UserId === parseInt(user.id);
@@ -715,15 +591,15 @@ const PromptEngineeringPage: React.FC = () => {
               })}
               <div ref={messagesEndRef} />
             </div>
-            <div className="border-t border-gray-200 p-4">
+            <div className="bg-gray-50 border-t border-gray-200 p-4">
               <div className="flex space-x-2">
                 <input
                   type="text"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                  placeholder="Type your message..."
-                  className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="Type your message to generate comic images..."
+                  className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
                 />
                 <button
                   onClick={handleSendMessage}
@@ -736,8 +612,13 @@ const PromptEngineeringPage: React.FC = () => {
           </div>
 
           {/* Comic Strip */}
-          <div className="w-1/2 p-6 overflow-y-auto">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="w-1/2 flex flex-col bg-white">
+            <div className="bg-white border-b border-gray-200 p-4">
+              <h4 className="text-lg font-semibold text-gray-800">Your Comic Strip</h4>
+              <p className="text-sm text-gray-600">Add captions and generate images for each panel</p>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
+              <div className="grid grid-cols-2 gap-4">
               {comicPanels.map(panel => (
                 <div key={panel.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
                   <input
@@ -757,7 +638,7 @@ const PromptEngineeringPage: React.FC = () => {
                       <img src={panel.imageUrl} alt={`Panel ${panel.id}`} className="w-full h-full object-cover rounded-lg" />
                     ) : (
                       <div className="text-gray-400">
-                        <ImageIcon size={32} />
+                        <ImageIcon size={16} />
                         <p className="mt-2">No image yet</p>
                         <button
                           onClick={() => handleGenerateImage(panel.id)}
@@ -771,26 +652,12 @@ const PromptEngineeringPage: React.FC = () => {
                 </div>
               ))}
             </div>
+            </div>
           </div>
         </div>
 
         {/* Next Button */}
-        <div className="bg-white border-t border-gray-200 p-4">
-          <div className="flex justify-end">
-            <button
-              onClick={handleNextClick}
-              disabled={nextButtonState.disabled}
-              className={`flex items-center px-4 py-2 rounded-lg ${
-                nextButtonState.disabled
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-purple-600 text-white hover:bg-purple-700'
-              }`}
-            >
-              <span>{nextButtonState.text}</span>
-              <ArrowRight size={16} className="ml-2" />
-            </button>
-          </div>
-        </div>
+
       </div>
 
       {/* Image Modal */}
@@ -816,6 +683,7 @@ const PromptEngineeringPage: React.FC = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

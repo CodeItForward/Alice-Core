@@ -83,11 +83,11 @@ const WorkspacePage: React.FC = () => {
   const section = workspaceSections.find(s => s.title === selectedSection);
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col h-full bg-gray-50">
       {/* Row 1: Sidebar + Main */}
-      <div className="flex flex-col md:flex-row flex-1 min-h-0">
+      <div className="flex flex-1 min-h-0">
         {/* Sidebar for workspace sections */}
-        <div className="bg-white border-b md:border-b-0 md:border-r border-gray-200 flex flex-col flex-shrink-0 md:w-56">
+        <div className="bg-white border-r border-gray-200 flex flex-col flex-shrink-0 w-64">
           <div className="p-4 font-bold text-lg border-b border-gray-100">Workspace Sections</div>
           <ul className="flex-1 overflow-auto">
             {workspaceSections.map(s => (
