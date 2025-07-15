@@ -394,12 +394,17 @@ export function createWebSocketConnection(
   channelId: number,
   onMessage: (data: WebSocketMessage) => void,
   onError: (error: Event) => void,
-  onClose: (event: CloseEvent) => void
+  onClose: (event: CloseEvent) => void,
+  onOpen?: (ws: WebSocket) => void
 ): WebSocket {
   const wsUrl = `${API_CONFIG.WS_BASE_URL}/teams/${teamId}/channels/${channelId}/ws`;
   console.log('Connecting to WebSocket:', wsUrl);
   
   const ws = new WebSocket(wsUrl);
+  
+  ws.onopen = () => {
+    if (onOpen) onOpen(ws);
+  };
   
   ws.onmessage = (event) => {
     try {

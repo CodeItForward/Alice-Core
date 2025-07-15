@@ -9,6 +9,7 @@ import PromptEngineeringPage from './PromptEngineeringPage';
 import TeambuildingPage from './TeambuildingPage';
 import MindMapPage from './MindMapPage';
 import AIEthicsPage from './AIEthicsPage';
+import AiForGoodPage from './AiForGoodPage';
 import { Navigate } from 'react-router-dom';
 
 // Wrapper component to enforce role checks
@@ -142,6 +143,7 @@ export default {
     { path: '/ai-for-good/teambuilding', component: withRoleCheck(TeambuildingPage) },
     { path: '/ai-for-good/mind-map', component: withRoleCheck(MindMapPage) },
     { path: '/ai-for-good/ai-ethics', component: withRoleCheck(AIEthicsPage) },
+    { path: '/ai-for-good/chat', component: withRoleCheck(AiForGoodPage) },
     { path: '/ai-for-good', component: () => <Navigate to="/ai-for-good/welcome" replace /> }
   ]
 }; 

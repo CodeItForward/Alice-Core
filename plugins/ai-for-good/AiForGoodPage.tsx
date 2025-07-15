@@ -333,6 +333,13 @@ export function AiForGoodPage() {
           } else {
             setError('Connection lost. Please refresh the page.');
           }
+        },
+        (ws) => {
+          // Send user_id immediately after connection is established
+          if (user && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'join', user_id: parseInt(user.id) }));
+            console.log('Sent join message with user_id:', user.id);
+          }
         }
       );
 

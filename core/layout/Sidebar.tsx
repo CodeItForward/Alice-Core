@@ -71,23 +71,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, pluginNavLinks
         </div>
         
         <nav className={`p-4 space-y-2 ${isMinimized ? 'px-2' : ''}`}>
-          {pluginNavLinks.some(link => link.path === '/chat' && link.label === 'Chat') && (
-            <SidebarLink 
-              to="/chat" 
-              icon={<MessageSquarePlus size={18} />} 
-              label="New Chat" 
-              isMinimized={isMinimized}
-            />
-          )}
-          {pluginNavLinks.some(link => link.path === '/codeitforward-chat' && link.label === "Let's Chat") && (
-            <SidebarLink 
-              to="/codeitforward-chat" 
-              icon={<MessageSquarePlus size={18} />} 
-              label="Let's Chat" 
-              isMinimized={isMinimized}
-            />
-          )}
-          
+          {/* Only show Alice Chat link at the top */}
+          <SidebarLink 
+            to="/codeitforward-chat" 
+            icon={<MessageSquarePlus size={18} />} 
+            label="Alice Chat" 
+            isMinimized={isMinimized}
+          />
           {/* Plugin navigation links */}
           {filteredNavLinks.map((navLink, index) => {
             // Only allow expansion for 'Module 1', not for 'AI for Good'
@@ -98,6 +88,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, pluginNavLinks
                 <div key={`${navLink.path}-${index}`}> 
                   {/* AI for Good label, not expandable */}
                   <div className={`flex items-center w-full px-3 py-2 text-gray-700 rounded-md font-medium ${isMinimized ? 'justify-center' : ''}`}>{!isMinimized && <span className="flex-1 text-left">{navLink.label}</span>}</div>
+                  {/* Group Chat link below AI for Good and above Module 1 */}
+                  <div className="ml-4 mb-1">
+                    <SidebarLink
+                      to="/ai-for-good/chat"
+                      icon={<MessageSquarePlus size={18} className="text-purple-500" />}
+                      label="Group Chat"
+                      isMinimized={isMinimized}
+                    />
+                  </div>
                   {/* Module 1 expandable */}
                   <button
                     className={`flex items-center w-full px-3 py-2 text-gray-700 rounded-md hover:bg-purple-50 hover:text-purple-800 transition-colors duration-200 group font-medium focus:outline-none ${isMinimized ? 'justify-center' : ''} ml-4`}
