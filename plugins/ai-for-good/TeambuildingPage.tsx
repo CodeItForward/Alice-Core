@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowRight, Save, Users, ChevronDown, CheckCircle, Activity } from 'lucide-react';
+import { ArrowRight, Save, Users, ChevronDown, CheckCircle, Activity, Video } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../core/context/AuthContext';
 import { 
@@ -81,6 +81,7 @@ const TeambuildingPage: React.FC = () => {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [isLoadingMembers, setIsLoadingMembers] = useState(false);
   const [membersError, setMembersError] = useState<string | null>(null);
+  const [showVideo, setShowVideo] = useState(true);
 
   const [formData, setFormData] = useState<TeambuildingForm>({
     firstName: '',
@@ -492,6 +493,41 @@ const TeambuildingPage: React.FC = () => {
 
   return (
     <div className="h-full bg-gray-50">
+      {/* Video Introduction Popup */}
+      {showVideo && (
+        <div className="bg-black bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold">Welcome to Teambuilding!</h3>
+              <button 
+                onClick={() => setShowVideo(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <span style={{fontSize: 24, lineHeight: 1}}>&times;</span>
+              </button>
+            </div>
+            <div className="aspect-video bg-gray-900 rounded-lg mb-4 relative overflow-hidden">
+              <iframe
+                src="https://www.youtube.com/embed/ZbT6NIdmLVs"
+                title="Teambuilding Introduction"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="absolute top-0 left-0 w-full h-full rounded-lg"
+              ></iframe>
+            </div>
+            <p className="text-gray-600 mb-4">
+              Watch this video to get inspired for your team building activity!
+            </p>
+            <button
+              onClick={() => setShowVideo(false)}
+              className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition"
+            >
+              Get Started
+            </button>
+          </div>
+        </div>
+      )}
       {/* Main Content Area */}
       <div className="flex flex-col h-full">
         {/* Header */}
@@ -568,7 +604,16 @@ const TeambuildingPage: React.FC = () => {
             {/* Team Members Display */}
             {selectedTeam && (
               <div className="mb-4">
-                <h2 className="text-lg font-semibold mb-2 flex items-center"><Users className="w-5 h-5 mr-2" />Team Members</h2>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold mb-2 flex items-center"><Users className="w-5 h-5 mr-2" />Team Members</h2>
+                  <button
+                    onClick={() => setShowVideo(true)}
+                    className="flex items-center text-purple-600 hover:text-purple-700"
+                  >
+                    <Video size={16} className="mr-2" />
+                    Watch Intro
+                  </button>
+                </div>
                 {isLoadingMembers ? (
                   <div className="text-gray-500">Loading team members...</div>
                 ) : membersError ? (

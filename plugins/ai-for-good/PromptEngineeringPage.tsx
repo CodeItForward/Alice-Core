@@ -27,7 +27,6 @@ const PromptEngineeringPage: React.FC = () => {
   const [newMessage, setNewMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [showVideo, setShowVideo] = useState(true);
 
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [generatingPanelId, setGeneratingPanelId] = useState<number | null>(null);
@@ -430,38 +429,6 @@ const PromptEngineeringPage: React.FC = () => {
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Video Introduction */}
-        {showVideo && (
-          <div className="bg-black bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center">
-            <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold">Welcome to Prompt Engineering!</h3>
-                <button 
-                  onClick={() => setShowVideo(false)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <X size={24} />
-                </button>
-              </div>
-              <div className="aspect-video bg-gray-900 rounded-lg mb-4">
-                {/* Video player will go here */}
-                <div className="w-full h-full flex items-center justify-center text-white">
-                  Video Introduction
-                </div>
-              </div>
-              <p className="text-gray-600 mb-4">
-                Learn how to create effective prompts to generate images for your comic strip.
-              </p>
-              <button
-                onClick={() => setShowVideo(false)}
-                className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition"
-              >
-                Get Started
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Instructions */}
         <div className="bg-white border-b border-gray-200 p-6">
           <div className="max-w-6xl mx-auto">
@@ -474,13 +441,6 @@ const PromptEngineeringPage: React.FC = () => {
                 >
                   <X size={16} className="mr-2" />
                   Clear Comic Strip
-                </button>
-                <button
-                  onClick={() => setShowVideo(true)}
-                  className="flex items-center text-purple-600 hover:text-purple-700"
-                >
-                  <Video size={16} className="mr-2" />
-                  Watch Intro
                 </button>
               </div>
             </div>
