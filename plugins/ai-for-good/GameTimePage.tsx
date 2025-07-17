@@ -5,8 +5,9 @@ import blindDrawImages from './blind_draw_images.json';
 const GameTimePage: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-  const handleImageClick = (imageUrl: string) => {
-    setSelectedImage(imageUrl);
+  const handleRevealClick = () => {
+    const idx = Math.floor(Math.random() * blindDrawImages.length);
+    setSelectedImage(blindDrawImages[idx]);
   };
 
   return (
@@ -44,7 +45,7 @@ const GameTimePage: React.FC = () => {
                 <h3 className="text-xl font-semibold text-purple-800 mb-4">How It Works</h3>
                 <ol className="list-decimal pl-6 mb-6 space-y-3 text-gray-700">
                   <li><strong>Choose a Describer:</strong> One person from your group gets access to a hidden image below.</li>
-                  <li><strong>Describe the Image:</strong> The describer explains what they see without saying what the object actually is.</li>
+                  <li><strong>Describe the Image:</strong> The describer explains what they see and tells everyone what the object is.</li>
                   <li><strong>Draw Based on Instructions:</strong> Everyone else draws what they think the image looks like based only on the verbal description.</li>
                   <li><strong>Reveal and Compare:</strong> Show your drawings and compare them to the original image.</li>
                   <li><strong>Discuss:</strong> Talk about what worked well and what was challenging about the communication process.</li>
@@ -59,23 +60,16 @@ const GameTimePage: React.FC = () => {
             </div>
 
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-xl font-semibold text-purple-800 mb-4">Click an Image to Begin</h3>
+              <h3 className="text-xl font-semibold text-purple-800 mb-4">Describer: Reveal the Secret Image</h3>
               <p className="text-gray-600 mb-4">
-                The describer should click on one of the images below. Only the describer should look at the image!
+                Only the describer should click the button below to reveal the image!
               </p>
-              
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {blindDrawImages.map((imageUrl, index) => (
-                  <div key={index} className="relative">
-                    <button
-                      onClick={() => handleImageClick(imageUrl)}
-                      className="w-full aspect-square bg-purple-100 rounded-lg border-2 border-purple-200 hover:border-purple-400 transition-colors duration-200 flex items-center justify-center"
-                    >
-                      <span className="text-purple-600 font-medium">Image {index + 1}</span>
-                    </button>
-                  </div>
-                ))}
-              </div>
+              <button
+                onClick={handleRevealClick}
+                className="bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition mb-4"
+              >
+                Reveal Secret Image
+              </button>
             </div>
           </div>
         </div>
@@ -103,7 +97,7 @@ const GameTimePage: React.FC = () => {
             </div>
             <div className="mt-4 p-4 bg-yellow-50 rounded-lg">
               <p className="text-yellow-800 text-sm">
-                <strong>Remember:</strong> Describe what you see without saying what the object actually is. 
+                <strong>Remember:</strong> Describe what you see and tell everyone what the object is. 
                 Focus on shapes, positions, and details that will help others draw it accurately.
               </p>
             </div>

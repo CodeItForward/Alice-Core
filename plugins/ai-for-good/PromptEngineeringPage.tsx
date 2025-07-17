@@ -213,6 +213,13 @@ const PromptEngineeringPage: React.FC = () => {
           } else {
             setError('Connection lost. Please refresh the page.');
           }
+        },
+        (ws) => {
+          // Send join message with user_id as soon as the connection is open
+          if (user && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ user_id: parseInt(user.id) }));
+            console.log('Sent join message with user_id:', user.id);
+          }
         }
       );
 

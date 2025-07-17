@@ -15,6 +15,8 @@ const Module2WelcomePage: React.FC = () => {
         <div className="max-w-4xl mx-auto overflow-y-auto" style={{ maxHeight: 'calc(100vh - 120px)' }}>
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
             <p className="text-gray-700 mb-6">
+              <strong>Work in Progress</strong>: Modules 2, 3, and 4 are still under development. The video on the bottom of Module 2 is an example of what the kids will be doing throughout.  </p>
+            <p className="text-gray-700 mb-6">
               In this module, you and your team will turn your big ideas into something real. Get ready to dive in, create, and show off your creativity using the latest AI tools!
             </p>
             <h2 className="text-xl font-semibold mb-2">Here's what you'll be doing in Module 2:</h2>
