@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, MessageSquare, Image as ImageIcon, Save, X, Loader2, Bot, User as UserIcon, Video } from 'lucide-react';
 import { useAuth } from '../../core/context/AuthContext';
-import { getTeamChannels, getChannelMessages, postMessage, createWebSocketConnection, type Channel, type ChatMessage, type WebSocketMessage, getComicStrip, getUserComicStrips, createComicStrip, updateComicStrip, type ComicStrip } from '../../core/services/api';
+import { getTeamChannels, getChannelMessages, postMessage, createWebSocketConnection, type Channel, type ChatMessage, type WebSocketMessage, getComicStrip, getUserComicStrips, createComicStrip, updateComicStrip, type ComicStrip, getUserTeamsByType } from '../../core/services/api';
 
 interface ComicPanel {
   id: number;
@@ -41,6 +41,16 @@ const PromptEngineeringPage: React.FC = () => {
   const MAX_RECONNECT_ATTEMPTS = 5;
   const [loadingImageId, setLoadingImageId] = useState<number | null>(null);
   const VERSION = '1.0.1';
+
+  const [teamMembers, setTeamMembers] = useState<any[]>([]);
+  const [isLoadingMembers, setIsLoadingMembers] = useState(false);
+  const [membersError, setMembersError] = useState<string | null>(null);
+  const [showTeammateComic, setShowTeammateComic] = useState(false);
+  const [teammateComicPanels, setTeammateComicPanels] = useState<any[]>([]);
+  const [teammateComicLoading, setTeammateComicLoading] = useState(false);
+  const [teammateComicError, setTeammateComicError] = useState<string | null>(null);
+  const [selectedTeammate, setSelectedTeammate] = useState<any>(null);
+  const [teammatesWithComics, setTeammatesWithComics] = useState<any[]>([]);
 
   // Log version on component mount
   useEffect(() => {
@@ -422,24 +432,138 @@ const PromptEngineeringPage: React.FC = () => {
     wsSetupRef.current = false;
   };
 
+  // Fetch team members on mount
+  useEffect(() => {
+    const fetchTeamMembers = async () => {
+      if (!user) return;
+      setIsLoadingMembers(true);
+      setMembersError(null);
+      try {
+        // Get user's teams (type 4 for AI for Good)
+        const teams = await getUserTeamsByType(parseInt(user.id), 4);
+        const team = teams && teams.length > 0 ? teams.reduce((prev, current) => (prev.TeamId > current.TeamId ? prev : current)) : null;
+        if (!team) throw new Error('No team found');
+        // Fetch team members
+        const res = await fetch(`https://restrictedchat.purplemeadow-b77df452.eastus.azurecontainerapps.io/teams/${team.TeamId}/members`);
+        if (!res.ok) throw new Error('Failed to fetch team members');
+        const members = await res.json();
+        setTeamMembers(members);
+        
+        // Check which teammates have comics
+        const teammatesWithComicsData: any[] = [];
+        for (const member of members) {
+          const hasComics = await checkTeammateHasComics(member);
+          if (hasComics) {
+            teammatesWithComicsData.push(member);
+          }
+        }
+        setTeammatesWithComics(teammatesWithComicsData);
+      } catch (err: any) {
+        setMembersError(err.message || 'Failed to load team members');
+      } finally {
+        setIsLoadingMembers(false);
+      }
+    };
+    fetchTeamMembers();
+  }, [user]);
+
+  // Check if a teammate has comics
+  const checkTeammateHasComics = async (member: any): Promise<boolean> => {
+    try {
+      const strips = await getUserComicStrips(member.user.UserId);
+      if (strips && strips.length > 0) {
+        const comic = strips[0];
+        // Check if the comic has at least one image or caption
+        return !!(comic.Panel1Image || comic.Panel1Caption || 
+                 comic.Panel2Image || comic.Panel2Caption || 
+                 comic.Panel3Image || comic.Panel3Caption || 
+                 comic.Panel4Image || comic.Panel4Caption);
+      }
+      return false;
+    } catch (err) {
+      console.error('Error checking teammate comics:', err);
+      return false;
+    }
+  };
+
+  // Handler to show teammate's comic strip
+  const handleShowTeammateComic = async (member: any) => {
+    setSelectedTeammate(member);
+    setShowTeammateComic(true);
+    setTeammateComicLoading(true);
+    setTeammateComicError(null);
+    setTeammateComicPanels([]);
+    try {
+      const strips = await getUserComicStrips(member.user.UserId);
+      if (strips && strips.length > 0) {
+        const comic = strips[0];
+        setTeammateComicPanels([
+          { id: 1, imageUrl: comic.Panel1Image, caption: comic.Panel1Caption },
+          { id: 2, imageUrl: comic.Panel2Image, caption: comic.Panel2Caption },
+          { id: 3, imageUrl: comic.Panel3Image, caption: comic.Panel3Caption },
+          { id: 4, imageUrl: comic.Panel4Image, caption: comic.Panel4Caption }
+        ]);
+      } else {
+        setTeammateComicError('No comic strip found for this teammate.');
+      }
+    } catch (err: any) {
+      setTeammateComicError(err.message || 'Failed to load comic strip.');
+    } finally {
+      setTeammateComicLoading(false);
+    }
+  };
+
+  // Handler to close teammate comic modal
+  const handleCloseTeammateComic = () => {
+    setShowTeammateComic(false);
+    setSelectedTeammate(null);
+    setTeammateComicPanels([]);
+    setTeammateComicError(null);
+  };
+
   return (
     <div className="h-full bg-gray-50">
-      {/* Main Content Area */}
-      <div className="flex flex-col h-full">
-        {/* Header */}
-        <div className="bg-white p-4 border-b border-gray-200">
-          <div className="max-w-6xl mx-auto">
-            {/* Removed: <h3 className="text-xl font-bold text-gray-800">Prompt Engineering Activity</h3> */}
-            {/* Removed: <p className="text-gray-500">Learn and practice effective prompt engineering techniques</p> */}
+      {/* Teammate Comic Modal */}
+      {showTeammateComic && (
+        <div className="bg-black bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold">{selectedTeammate?.user.DisplayName}'s Comic Strip</h3>
+              <button 
+                onClick={handleCloseTeammateComic}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            {teammateComicLoading ? (
+              <div className="text-gray-500">Loading comic strip...</div>
+            ) : teammateComicError ? (
+              <div className="text-red-500">{teammateComicError}</div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                {teammateComicPanels.map(panel => (
+                  <div key={panel.id} className="bg-gray-100 rounded-lg p-2 flex flex-col items-center">
+                    {panel.imageUrl ? (
+                      <img src={panel.imageUrl} alt={`Panel ${panel.id}`} className="w-full h-40 object-contain rounded mb-2" />
+                    ) : (
+                      <div className="w-full h-40 flex items-center justify-center text-gray-400 bg-gray-200 rounded mb-2">No Image</div>
+                    )}
+                    <div className="text-xs text-gray-700 text-center">{panel.caption}</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
-
+      )}
+      {/* Main Content Area */}
+      <div className="flex flex-col h-full">
         {/* Main Content */}
         <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Instructions */}
-        <div className="bg-white border-b border-gray-200 p-6">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex justify-between items-start mb-4">
+          {/* Instructions */}
+          <div className="bg-white border-b border-gray-200 p-4">
+            <div className="flex justify-between items-start mb-3">
               <h2 className="text-2xl font-bold">Create Your Comic Strip</h2>
               <div className="flex items-center space-x-4">
                 <button
@@ -453,164 +577,187 @@ const PromptEngineeringPage: React.FC = () => {
             </div>
             <div className="prose max-w-none">
               <p className="text-gray-600">
-                Use the chat interface below to work with AI to generate images for your comic strip.
-                Each image should tell part of your story. Add captions to complete your narrative.
+                Use the chat window below to practice prompt engineering with Alice. Alice can help you come up with ideas for your script and can even help generate images for your comic! Just remember to use the best practices you just read about.
               </p>
+            </div>
+          </div>
+
+          {/* Main Content Area */}
+          <div className="flex-1 flex overflow-hidden bg-gray-50">
+            {/* Chat Interface */}
+            <div className="w-1/2 border-r border-gray-200 flex flex-col bg-white">
+              <div className="bg-white border-b border-gray-200 p-4">
+                <h4 className="text-lg font-semibold text-gray-800">AI Chat Interface</h4>
+              </div>
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {messages.map((message) => {
+                  const isAlice = message.user.UserId === 1;
+                  const isCurrentUser = user && message.user.UserId === parseInt(user.id);
+                  return (
+                    <div
+                      key={message.MessageId}
+                      className="flex justify-start"
+                    >
+                      <div className="flex max-w-[80%] flex-row">
+                        {/* Avatar */}
+                        <div className="flex-shrink-0 mr-4">
+                          <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
+                            isAlice
+                              ? 'bg-blue-100'
+                              : isCurrentUser
+                              ? 'bg-purple-100'
+                              : 'bg-gray-100'
+                          }`}>
+                            {isAlice ? (
+                              <Bot size={16} className="text-blue-800" />
+                            ) : isCurrentUser ? (
+                              <UserIcon size={16} className="text-purple-800" />
+                            ) : (
+                              <span className="text-white font-bold">{message.user.DisplayName?.[0]?.toUpperCase() || '?'}</span>
+                            )}
+                          </div>
+                        </div>
+                        {/* Message Bubble */}
+                        <div>
+                          <div className={`rounded-2xl px-4 py-3 ${
+                            isAlice
+                              ? 'bg-blue-100 border border-gray-200 shadow-sm rounded-tl-none'
+                              : isCurrentUser
+                              ? 'bg-purple-600 text-white rounded-tr-none'
+                              : 'border border-gray-200 shadow-sm rounded-tl-none'
+                          }`}>
+                            <div className="text-sm">
+                              <div>{message.Text}</div>
+                              {message.type === 'image' && message.image_url && (
+                                <div className="mt-2">
+                                  <img 
+                                    src={message.image_url} 
+                                    alt="Shared image" 
+                                    className="max-w-full rounded-lg shadow-sm cursor-pointer hover:opacity-90 transition"
+                                    style={{ maxHeight: '400px' }}
+                                    onClick={() => message.image_url && setSelectedImage(message.image_url)}
+                                  />
+                                  {isAlice && (
+                                    <div className="mt-2 grid grid-cols-2 gap-2">
+                                      {[1, 2, 3, 4].map((panelId) => (
+                                        <button
+                                          key={panelId}
+                                          onClick={() => message.image_url && handleSaveImage(panelId, message.image_url)}
+                                          className="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700 transition text-sm"
+                                        >
+                                          Use for Panel {panelId}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                              {message.type === 'loading' && (
+                                <div className="mt-1 flex items-center space-x-2">
+                                  <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                                  <span className="text-gray-600">Generating your image...</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="mt-1 text-xs text-gray-500 text-left"> 
+                            {isAlice ? 'Alice' : isCurrentUser ? 'You' : message.user.DisplayName} · {new Date(message.Timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                <div ref={messagesEndRef} />
+              </div>
+              <div className="bg-gray-50 border-t border-gray-200 p-4">
+                <div className="flex space-x-2">
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                    placeholder="Type your message to generate comic images..."
+                    className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                  />
+                  <button
+                    onClick={handleSendMessage}
+                    className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition"
+                  >
+                    Send
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Comic Strip */}
+            <div className="w-1/2 flex flex-col bg-white">
+              <div className="bg-white border-b border-gray-200 p-4">
+                <h4 className="text-lg font-semibold text-gray-800">Your Comic Strip</h4>
+              </div>
+              <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
+                <div className="grid grid-cols-2 gap-4">
+                {comicPanels.map(panel => (
+                  <div key={panel.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                    <input
+                      type="text"
+                      value={panel.caption}
+                      onChange={(e) => handleUpdateCaption(panel.id, e.target.value)}
+                      placeholder={`Caption for panel ${panel.id}`}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                    <div className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center relative">
+                      {isGeneratingImage && generatingPanelId === panel.id ? (
+                        <div className="flex flex-col items-center justify-center">
+                          <Loader2 className="w-8 h-8 text-purple-600 animate-spin mb-2" />
+                          <p className="text-purple-600">Generating your image...</p>
+                        </div>
+                      ) : panel.imageUrl ? (
+                        <img src={panel.imageUrl} alt={`Panel ${panel.id}`} className="w-full h-full object-cover rounded-lg" />
+                      ) : (
+                        <div className="text-gray-400">
+                          <ImageIcon size={16} />
+                          <p className="mt-2">No image yet</p>
+                          <button
+                            onClick={() => handleGenerateImage(panel.id)}
+                            className="mt-4 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition"
+                          >
+                            Generate Image
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Main Content Area */}
-        <div className="flex-1 flex overflow-hidden bg-gray-50">
-          {/* Chat Interface */}
-          <div className="w-1/2 border-r border-gray-200 flex flex-col bg-white">
-            <div className="bg-white border-b border-gray-200 p-4">
-              <h4 className="text-lg font-semibold text-gray-800">AI Chat Interface</h4>
-              <p className="text-sm text-gray-600">Use the chat window below to practice prompt engineering with Alice.  Alice can help you come up with ideas for your script and can even help generate images for your comic!  Just remember to use the best practices you just read about.</p>
-            </div>
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              {messages.map((message) => {
-                const isAlice = message.user.UserId === 1;
-                const isCurrentUser = user && message.user.UserId === parseInt(user.id);
-                return (
-                  <div
-                    key={message.MessageId}
-                    className="flex justify-start"
+        {/* Teammate Comics List */}
+        <div className="bg-white border-t border-gray-200 p-6">
+          <div className="max-w-6xl mx-auto">
+            <h3 className="text-lg font-semibold mb-2 text-purple-800">View Teammates Comics</h3>
+            {isLoadingMembers ? (
+              <div className="text-gray-500">Loading team members...</div>
+            ) : membersError ? (
+              <div className="text-red-500">{membersError}</div>
+            ) : teammatesWithComics.length > 0 ? (
+              <div className="flex flex-wrap gap-3 mb-2">
+                {teammatesWithComics.map(member => (
+                  <button
+                    key={member.TeamMemberId}
+                    onClick={() => handleShowTeammateComic(member)}
+                    className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium hover:bg-purple-200 transition"
                   >
-                    <div className="flex max-w-[80%] flex-row">
-                      {/* Avatar */}
-                      <div className="flex-shrink-0 mr-4">
-                        <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                          isAlice
-                            ? 'bg-blue-100'
-                            : isCurrentUser
-                            ? 'bg-purple-100'
-                            : 'bg-gray-100'
-                        }`}>
-                          {isAlice ? (
-                            <Bot size={16} className="text-blue-800" />
-                          ) : isCurrentUser ? (
-                            <UserIcon size={16} className="text-purple-800" />
-                          ) : (
-                            <span className="text-white font-bold">{message.user.DisplayName?.[0]?.toUpperCase() || '?'}</span>
-                          )}
-                        </div>
-                      </div>
-                      {/* Message Bubble */}
-                      <div>
-                        <div className={`rounded-2xl px-4 py-3 ${
-                          isAlice
-                            ? 'bg-blue-100 border border-gray-200 shadow-sm rounded-tl-none'
-                            : isCurrentUser
-                            ? 'bg-purple-600 text-white rounded-tr-none'
-                            : 'border border-gray-200 shadow-sm rounded-tl-none'
-                        }`}>
-                          <div className="text-sm">
-                            <div>{message.Text}</div>
-                            {message.type === 'image' && message.image_url && (
-                              <div className="mt-2">
-                                <img 
-                                  src={message.image_url} 
-                                  alt="Shared image" 
-                                  className="max-w-full rounded-lg shadow-sm cursor-pointer hover:opacity-90 transition"
-                                  style={{ maxHeight: '400px' }}
-                                  onClick={() => message.image_url && setSelectedImage(message.image_url)}
-                                />
-                                {isAlice && (
-                                  <div className="mt-2 grid grid-cols-2 gap-2">
-                                    {[1, 2, 3, 4].map((panelId) => (
-                                      <button
-                                        key={panelId}
-                                        onClick={() => message.image_url && handleSaveImage(panelId, message.image_url)}
-                                        className="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700 transition text-sm"
-                                      >
-                                        Use for Panel {panelId}
-                                      </button>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                            {message.type === 'loading' && (
-                              <div className="mt-1 flex items-center space-x-2">
-                                <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
-                                <span className="text-gray-600">Generating your image...</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <div className="mt-1 text-xs text-gray-500 text-left"> 
-                          {isAlice ? 'Alice' : isCurrentUser ? 'You' : message.user.DisplayName} · {new Date(message.Timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-              <div ref={messagesEndRef} />
-            </div>
-            <div className="bg-gray-50 border-t border-gray-200 p-4">
-              <div className="flex space-x-2">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                  placeholder="Type your message to generate comic images..."
-                  className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
-                />
-                <button
-                  onClick={handleSendMessage}
-                  className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition"
-                >
-                  Send
-                </button>
+                    {member.user.DisplayName}
+                  </button>
+                ))}
               </div>
-            </div>
-          </div>
-
-          {/* Comic Strip */}
-          <div className="w-1/2 flex flex-col bg-white">
-            <div className="bg-white border-b border-gray-200 p-4">
-              <h4 className="text-lg font-semibold text-gray-800">Your Comic Strip</h4>
-              <p className="text-sm text-gray-600">Add captions and generate images for each panel</p>
-            </div>
-            <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
-              <div className="grid grid-cols-2 gap-4">
-              {comicPanels.map(panel => (
-                <div key={panel.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                  <input
-                    type="text"
-                    value={panel.caption}
-                    onChange={(e) => handleUpdateCaption(panel.id, e.target.value)}
-                    placeholder={`Caption for panel ${panel.id}`}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                  <div className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center relative">
-                    {isGeneratingImage && generatingPanelId === panel.id ? (
-                      <div className="flex flex-col items-center justify-center">
-                        <Loader2 className="w-8 h-8 text-purple-600 animate-spin mb-2" />
-                        <p className="text-purple-600">Generating your image...</p>
-                      </div>
-                    ) : panel.imageUrl ? (
-                      <img src={panel.imageUrl} alt={`Panel ${panel.id}`} className="w-full h-full object-cover rounded-lg" />
-                    ) : (
-                      <div className="text-gray-400">
-                        <ImageIcon size={16} />
-                        <p className="mt-2">No image yet</p>
-                        <button
-                          onClick={() => handleGenerateImage(panel.id)}
-                          className="mt-4 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition"
-                        >
-                          Generate Image
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-            </div>
+            ) : (
+              <div className="text-gray-500">No teammates have created comics yet.</div>
+            )}
           </div>
         </div>
 
@@ -641,7 +788,6 @@ const PromptEngineeringPage: React.FC = () => {
           </div>
         </div>
       )}
-      </div>
     </div>
   );
 };
